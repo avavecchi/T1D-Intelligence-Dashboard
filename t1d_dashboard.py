@@ -176,11 +176,68 @@ with tab4:
 
     st.header("📅 T1D Events")
 
-    st.write(
-        "Upcoming diabetes conferences, webinars, and advocacy events."
+    st.caption(
+        "Upcoming diabetes conferences, webinars, and advocacy events"
     )
 
 
+    events = [
+
+        {
+            "Event": "ADA Scientific Sessions",
+            "Type": "Scientific Conference",
+            "Focus": "Diabetes research, clinical care, innovation",
+            "Organization": "American Diabetes Association",
+            "Link": "https://professional.diabetes.org/scientific-sessions"
+        },
+
+        {
+            "Event": "ADA Professional Webinars",
+            "Type": "Webinar Series",
+            "Focus": "Clinical updates, guidelines, diabetes management",
+            "Organization": "American Diabetes Association",
+            "Link": "https://professional.diabetes.org/professional-development/upcoming-professional-webinars"
+        },
+
+        {
+            "Event": "Breakthrough T1D Events",
+            "Type": "Advocacy & Community",
+            "Focus": "T1D research, advocacy, community engagement",
+            "Organization": "Breakthrough T1D",
+            "Link": "https://www.breakthrought1d.org/events/"
+        },
+
+        {
+            "Event": "Clinical Research Updates",
+            "Type": "Research",
+            "Focus": "Early-stage T1D, screening, disease modification",
+            "Organization": "TrialNet",
+            "Link": "https://www.trialnet.org/events"
+        }
+
+    ]
+
+
+    for event in events:
+
+        st.subheader(event["Event"])
+
+        st.write(
+            f"""
+            **Type:** {event["Type"]}
+
+            **Organization:** {event["Organization"]}
+
+            **Focus:** {event["Focus"]}
+            """
+        )
+
+        st.link_button(
+            "View Event",
+            event["Link"]
+        )
+
+        st.divider()
 
 # DAILY BRIEF TAB
 with tab5:
