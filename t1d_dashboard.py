@@ -128,8 +128,50 @@ with tab4:
 # DAILY BRIEF TAB
 with tab5:
 
-    st.header("⭐ Daily Brief")
+    st.header("⭐ Daily T1D Intelligence Brief")
+
+    st.caption("Summary of key advocacy, research, and policy updates")
+
+
+    st.subheader("🔥 Top Advocacy Updates")
+
+    st.write("""
+    • Breakthrough T1D updates and advocacy initiatives  
+    • American Diabetes Association announcements  
+    • Patient community and education campaigns
+    """)
+
+
+    st.subheader("🔬 Research Highlights")
+
+    st.write("""
+    • Early-stage T1D screening developments  
+    • Beta-cell preservation research  
+    • Clinical trial updates
+    """)
+
+
+    st.subheader("🏛 Policy & Healthcare Updates")
+
+    st.write("""
+    • Screening guideline discussions  
+    • Healthcare provider education initiatives  
+    • Access and reimbursement updates
+    """)
+
+
+    st.subheader("📅 Upcoming Events")
+
+    st.write("""
+    • ADA Scientific Sessions  
+    • ISPAD Congress  
+    • Diabetes advocacy webinars
+    """)
+
+
+    st.subheader("💡 Key Takeaway")
 
     st.info(
-        "Future feature: AI-generated summary of the most important T1D updates."
+        "Today's intelligence highlights opportunities to improve early T1D detection, "
+        "increase stakeholder awareness, and strengthen patient advocacy efforts."
     )
