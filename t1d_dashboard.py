@@ -60,27 +60,25 @@ with tab1:
 
         articles = soup.find_all("item")[:3]
 
+if articles:
 
-        if articles:
+    for article in articles:
 
-            for article in articles:
+        st.write(
+            f"**{article.title.text}**"
+        )
 
-                st.write(
-                    f"**{article.title.text}**"
-                )
+        article_link = article.find("link").text
 
-              article_link = article.find("link").text
+        st.link_button(
+            "Read article",
+            article_link
+        )
 
-st.link_button(
-    "Read article",
-    article_link
-)
+else:
+    st.write("No recent updates found.")
 
-        else:
-            st.write("No recent updates found.")
-
-        st.divider()
-
+st.divider()
 
 # PAG DIRECTORY TAB
 with tab2:
