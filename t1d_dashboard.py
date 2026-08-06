@@ -26,9 +26,58 @@ with tab1:
 
     st.header("📰 T1D Advocacy News")
 
-    st.write(
-        "Daily news updates from diabetes organizations will appear here."
-    )
+    st.caption("Latest updates from Type 1 Diabetes patient advocacy organizations")
+
+
+    import requests
+    from bs4 import BeautifulSoup
+
+
+    organizations = [
+        "American Diabetes Association",
+        "Breakthrough T1D",
+        "Beyond Type 1",
+        "Children with Diabetes",
+        "T1D Exchange",
+        "Diabetes Patient Advocacy Coalition",
+        "The Diabetes Link"
+    ]
+
+
+    for org in organizations:
+
+        st.subheader(org)
+
+        url = (
+            "https://news.google.com/rss/search?q="
+            + org.replace(" ", "+")
+            + "+type+1+diabetes"
+        )
+
+        response = requests.get(url)
+
+        soup = BeautifulSoup(response.text, "xml")
+
+        articles = soup.find_all("item")[:3]
+
+
+        if articles:
+
+            for article in articles:
+
+                st.write(
+                    f"**{article.title.text}**"
+                )
+
+                st.link_button(
+                    "Read article",
+                    article.link.text
+                )
+
+        else:
+            st.write("No recent updates found.")
+
+        st.divider()
 
 
 # PAG DIRECTORY TAB
