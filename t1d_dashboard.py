@@ -22,79 +22,70 @@ tab1, tab2, tab3, tab4, tab5 = st.tabs([
 
 
 # NEWS TAB
-# NEWS TAB
 with tab1:
 
     st.header("📰 T1D Advocacy News")
 
-    st.caption("Latest updates from Type 1 Diabetes patient advocacy organizations")
+    st.caption("Latest updates directly from Type 1 Diabetes organizations")
 
 
-    import requests
-    from bs4 import BeautifulSoup
-    import urllib.parse
+    import feedparser
 
 
-    organizations = [
-        "American Diabetes Association",
-        "Breakthrough T1D",
-        "Beyond Type 1",
-        "Children with Diabetes",
-        "T1D Exchange",
-        "Diabetes Patient Advocacy Coalition",
-        "The Diabetes Link"
-    ]
+    organizations = {
+        "American Diabetes Association": 
+            "https://diabetes.org/rss.xml",
+
+        "Breakthrough T1D":
+            "https://www.breakthrought1d.org/feed/",
+
+        "Beyond Type 1":
+            "https://beyondtype1.org/feed/",
+
+        "Children with Diabetes":
+            "https://childrenwithdiabetes.com/feed/",
+
+        "T1D Exchange":
+            "https://t1dexchange.org/feed/"
+    }
 
 
-    for org in organizations:
+    for org, feed_url in organizations.items():
 
         st.subheader(org)
 
-        query = urllib.parse.quote(
-            f"{org} Type 1 Diabetes"
-        )
+        try:
 
-        url = f"https://news.google.com/rss/search?q={query}"
+            feed = feedparser.parse(feed_url)
 
-
-        response = requests.get(url)
+            articles = feed.entries[:3]
 
 
-        soup = BeautifulSoup(
-            response.text,
-            "html.parser"
-        )
+            if articles:
 
+                for article in articles:
 
-        articles = soup.find_all("item")[:3]
+                    st.markdown(
+                        f"**{article.title}**"
+                    )
 
+                    st.markdown(
+                        f"[🔗 Read article]({article.link})"
+                    )
 
-        if articles:
+                    st.divider()
 
-            for article in articles:
+            else:
 
-                title = article.find("title").text
-
-                link = article.find("link").text
-
-
-                st.markdown(
-                    f"**{title}**"
+                st.write(
+                    "No recent updates available."
                 )
 
 
-                st.markdown(
-                    f"[🔗 Read article]({link})"
-                )
-
-
-                st.divider()
-
-
-        else:
+        except:
 
             st.write(
-                "No recent updates found."
+                "Unable to load updates."
             )
 
 # PAG DIRECTORY TAB
