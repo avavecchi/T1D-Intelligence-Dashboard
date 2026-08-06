@@ -69,10 +69,12 @@ with tab1:
                     f"**{article.title.text}**"
                 )
 
-                st.link_button(
-                    "Read article",
-                    article.link.text
-                )
+              article_link = article.find("link").text
+
+st.link_button(
+    "Read article",
+    article_link
+)
 
         else:
             st.write("No recent updates found.")
