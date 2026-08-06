@@ -56,7 +56,7 @@ with tab1:
 
         response = requests.get(url)
 
-        soup = BeautifulSoup(response.text, "xml")
+        soup = BeautifulSoup(response.text, "html.parser")
 
         articles = soup.find_all("item")[:3]
 
