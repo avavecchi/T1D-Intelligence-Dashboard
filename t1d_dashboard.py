@@ -22,6 +22,7 @@ tab1, tab2, tab3, tab4, tab5 = st.tabs([
 
 
 # NEWS TAB
+# NEWS TAB
 with tab1:
 
     st.header("📰 T1D Advocacy News")
@@ -31,6 +32,7 @@ with tab1:
 
     import requests
     from bs4 import BeautifulSoup
+    import urllib.parse
 
 
     organizations = [
@@ -48,37 +50,52 @@ with tab1:
 
         st.subheader(org)
 
-        url = (
-            "https://news.google.com/rss/search?q="
-            + org.replace(" ", "+")
-            + "+type+1+diabetes"
+        query = urllib.parse.quote(
+            f"{org} Type 1 Diabetes"
         )
+
+        url = f"https://news.google.com/rss/search?q={query}"
+
 
         response = requests.get(url)
 
-        soup = BeautifulSoup(response.text, "html.parser")
+
+        soup = BeautifulSoup(
+            response.text,
+            "html.parser"
+        )
+
 
         articles = soup.find_all("item")[:3]
 
-if articles:
 
-    for article in articles:
+        if articles:
 
-        st.write(
-            f"**{article.title.text}**"
-        )
+            for article in articles:
 
-        article_link = article.find("link").text
+                title = article.find("title").text
 
-        st.link_button(
-            "Read article",
-            article_link
-        )
+                link = article.find("link").text
 
-else:
-    st.write("No recent updates found.")
 
-st.divider()
+                st.markdown(
+                    f"**{title}**"
+                )
+
+
+                st.markdown(
+                    f"[🔗 Read article]({link})"
+                )
+
+
+                st.divider()
+
+
+        else:
+
+            st.write(
+                "No recent updates found."
+            )
 
 # PAG DIRECTORY TAB
 with tab2:
