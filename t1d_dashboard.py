@@ -152,24 +152,64 @@ with tab2:
 # RESEARCH TAB
 with tab3:
 
-    st.header("🔬 Research Resources")
+    st.header("📆 T1D Intelligence Timeline")
 
-    st.link_button(
-        "PubMed",
-        "https://pubmed.ncbi.nlm.nih.gov/"
+    st.caption(
+        "Daily tracking of advocacy, research, policy, and community updates"
     )
 
-    st.link_button(
-        "ClinicalTrials.gov",
-        "https://clinicaltrials.gov/"
-    )
+    import pandas as pd
 
-    st.link_button(
-        "TrialNet",
-        "https://www.trialnet.org/"
+
+    intelligence = pd.read_csv(
+        "T1D_Intelligence.csv"
     )
 
 
+    intelligence["Date"] = pd.to_datetime(
+        intelligence["Date"]
+    )
+
+
+    selected_date = st.date_input(
+        "Select a date",
+        intelligence["Date"].max()
+    )
+
+
+    updates = intelligence[
+        intelligence["Date"] == pd.Timestamp(selected_date)
+    ]
+
+
+    if not updates.empty:
+
+        for _, row in updates.iterrows():
+
+            st.subheader(
+                row["Title"]
+            )
+
+            st.write(
+                f"""
+                **Category:** {row["Category"]}
+
+                **Organization:** {row["Organization"]}
+                """
+            )
+
+            st.link_button(
+                "Read More",
+                row["Link"]
+            )
+
+            st.divider()
+
+    else:
+
+        st.info(
+            "No intelligence updates available for this date."
+        )
 
 # EVENTS TAB
 with tab4:
