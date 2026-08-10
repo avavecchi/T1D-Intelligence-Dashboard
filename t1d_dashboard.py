@@ -661,114 +661,142 @@ with tab3:
 
                     continue
 
+# ==========================================
+# ADA
+# ==========================================
 
-    # ==========================================
-    # ADA
-    # ==========================================
+def scrape_ada():
 
-    def scrape_ada():
+    url = (
+        "https://diabetes.org/events/calendar-events"
+    )
 
-        url = (
-            "https://diabetes.org/events/calendar-events"
+    html = get_page(url)
+
+    if not html:
+        return
+
+    soup = BeautifulSoup(
+        html,
+        "html.parser"
+    )
+
+    # Look through links on the ADA event page
+    # and identify nearby dates.
+
+    for link_tag in soup.find_all("a"):
+
+        title = link_tag.get_text(
+            " ",
+            strip=True
         )
 
-        html = get_page(url)
-
-        if not html:
-            return
-
-
-        soup = BeautifulSoup(
-            html,
-            "html.parser"
+        href = link_tag.get(
+            "href",
+            ""
         )
 
+        if not title:
+            continue
 
-        # Search all links on the page
+        # Get text surrounding the event link
 
-        for link_tag in soup.find_all("a"):
+        parent = link_tag.parent
 
-            title = link_tag.get_text(
+        if parent:
+
+            parent_text = parent.get_text(
                 " ",
                 strip=True
             )
 
-            href = link_tag.get(
-                "href",
-                ""
+        else:
+
+            parent_text = ""
+
+
+        # Simple date pattern.
+        # This intentionally avoids the previous
+        # multiline regex that caused the error.
+
+        date_pattern = (
+            r"(January|February|March|April|May|June|"
+            r"July|August|September|October|November|December)"
+            r"\s+\d{1,2},\s+\d{4}"
+        )
+
+
+        date_matches = re.findall(
+            date_pattern,
+            parent_text,
+            re.IGNORECASE
+        )
+
+
+        if not date_matches:
+            continue
+
+
+        # Find the complete date separately
+
+        full_date_match = re.search(
+            date_pattern,
+            parent_text,
+            re.IGNORECASE
+        )
+
+
+        if not full_date_match:
+            continue
+
+
+        try:
+
+            event_date = pd.to_datetime(
+                full_date_match.group(0),
+                errors="coerce"
             )
 
-
-            if not title:
+            if pd.isna(event_date):
                 continue
 
 
-            # Look around the link for a date
+            # Convert relative ADA links
+            # into full URLs.
 
-            parent_text = (
-                link_tag.parent.get_text(
-                    " ",
-                    strip=True
+            if href.startswith("/"):
+
+                href = (
+                    "https://diabetes.org"
+                    + href
                 )
-                if link_tag.parent
-                else ""
+
+
+            # Only keep actual event links
+
+            if not href:
+                href = url
+
+
+            add_event(
+
+                organization=
+                "American Diabetes Association",
+
+                title=title,
+
+                start_date=event_date,
+
+                event_type="ADA Event",
+
+                link=href
+
             )
 
 
-            date_matches = re.findall(
+        except Exception:
 
-                r"""
-                (
-                    January|February|March|April|May|June|
-                    July|August|September|October|November|December
-                )
-                \s+
-                \d{1,2},
-                \s+
-                \d{4}
-                )
-
-                """,
-
-                parent_text,
-                re.VERBOSE
-            )
-
-
-            if date_matches:
-
-                try:
-
-                    event_date = pd.to_datetime(
-                        date_matches[0]
-                    )
-
-                    if href.startswith("/"):
-
-                        href = (
-                            "https://diabetes.org"
-                            + href
-                        )
-
-
-                    add_event(
-
-                        organization=
-                        "American Diabetes Association",
-
-                        title=title,
-
-                        start_date=event_date,
-
-                        event_type="ADA Event",
-
-                        link=href
-
-                    )
-
-                except Exception:
-
-                    continue
+            continue
 
 
     # ==========================================
