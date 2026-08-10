@@ -314,20 +314,23 @@ with tab2:
 with tab3:
 
     import requests
+    import re
+    import json
     from bs4 import BeautifulSoup
     from datetime import datetime
-    import re
 
     st.header("📅 T1D Events & Opportunities")
 
     st.caption(
-        "Upcoming conferences, webinars, research meetings, "
-        "and advocacy opportunities across the Type 1 Diabetes community."
+        "Upcoming events, conferences, webinars, research meetings, "
+        "and advocacy opportunities from leading T1D organizations."
     )
 
     # ==========================================
-    # OFFICIAL EVENT CALENDARS
+    # EVENT CALENDAR LINKS
     # ==========================================
+
+    st.markdown("### 🔗 Event Calendars")
 
     EVENT_SOURCES = {
 
@@ -350,28 +353,16 @@ with tab3:
             "https://www.thediabeteslink.org/events",
 
         "Beyond Type 1":
-            "https://beyondtype1.org/"
+            "https://beyondtype1.org/es/eventos/"
     }
 
-
-    # ==========================================
-    # EVENT CALENDAR LINKS
-    # ==========================================
-
-    st.markdown("### 🔗 Official Event Calendars")
-
-    st.caption(
-        "Go directly to each organization's official event calendar "
-        "for the most complete and current information."
-    )
-
-    calendar_cols = st.columns(3)
+    source_cols = st.columns(3)
 
     for i, (organization, url) in enumerate(
         EVENT_SOURCES.items()
     ):
 
-        with calendar_cols[i % 3]:
+        with source_cols[i % 3]:
 
             st.link_button(
                 f"📅 {organization}",
@@ -379,35 +370,29 @@ with tab3:
                 use_container_width=True
             )
 
-
     st.divider()
 
 
     # ==========================================
-    # EVENT STORAGE
+    # REQUEST HELPER
     # ==========================================
 
-    all_events = []
+    HEADERS = {
+        "User-Agent":
+        "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) "
+        "AppleWebKit/537.36 (KHTML, like Gecko) "
+        "Chrome/126.0 Safari/537.36"
+    }
 
 
-    # ==========================================
-    # HTTP REQUEST
-    # ==========================================
-
-    def get_page(url):
+    def get_html(url):
 
         try:
 
-            headers = {
-                "User-Agent":
-                "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) "
-                "AppleWebKit/537.36 Chrome/126 Safari/537.36"
-            }
-
             response = requests.get(
                 url,
-                headers=headers,
-                timeout=20
+                headers=HEADERS,
+                timeout=25
             )
 
             if response.status_code == 200:
@@ -422,8 +407,11 @@ with tab3:
 
 
     # ==========================================
-    # ADD EVENT
+    # EVENT STORAGE
     # ==========================================
+
+    all_events = []
+
 
     def add_event(
         organization,
@@ -435,47 +423,93 @@ with tab3:
         location=""
     ):
 
+        if not title:
+            return
+
+        title = str(title).strip()
+
+        if len(title) < 4:
+            return
+
+        # Remove obvious navigation/button text
+
+        invalid_titles = {
+
+            "Events",
+            "Event",
+            "Search",
+            "Register",
+            "Register Now",
+            "Learn More",
+            "View Details",
+            "View Event",
+            "Read More",
+            "Apply Filters",
+            "Clear Filters",
+            "Find Events",
+            "Upcoming Events",
+            "Event Calendar",
+            "Calendar",
+            "More",
+            "Next",
+            "Previous"
+
+        }
+
+        if title in invalid_titles:
+            return
+
+
         try:
 
-            start_date = pd.to_datetime(
+            start = pd.to_datetime(
                 start_date,
                 errors="coerce"
             )
 
-            if pd.isna(start_date):
-
+            if pd.isna(start):
                 return
+
 
             if end_date:
 
-                end_date = pd.to_datetime(
+                end = pd.to_datetime(
                     end_date,
                     errors="coerce"
                 )
 
             else:
 
-                end_date = start_date
+                end = start
 
-            if pd.isna(end_date):
 
-                end_date = start_date
+            if pd.isna(end):
+
+                end = start
+
 
             all_events.append({
 
-                "Organization": organization,
+                "Organization":
+                    organization,
 
-                "Event": title,
+                "Event":
+                    title,
 
-                "Start Date": start_date,
+                "Start Date":
+                    start,
 
-                "End Date": end_date,
+                "End Date":
+                    end,
 
-                "Type": event_type,
+                "Type":
+                    event_type,
 
-                "Location": location,
+                "Location":
+                    location,
 
-                "Link": link
+                "Link":
+                    link
 
             })
 
@@ -485,30 +519,22 @@ with tab3:
 
 
     # ==========================================
-    # GENERIC EVENT SCRAPER
+    # JSON-LD EVENT SCRAPER
     # ==========================================
 
-    def scrape_generic(
+    def scrape_json_ld(
+        html,
         organization,
-        url,
-        event_type="Event"
+        default_type="Event"
     ):
 
-        html = get_page(url)
-
         if not html:
-
             return
 
         soup = BeautifulSoup(
             html,
             "html.parser"
         )
-
-
-        # --------------------------------------
-        # Look for structured event data first
-        # --------------------------------------
 
         scripts = soup.find_all(
             "script",
@@ -519,55 +545,94 @@ with tab3:
 
             try:
 
-                import json
+                raw = script.string
 
-                data = json.loads(
-                    script.string or ""
-                )
+                if not raw:
+                    continue
+
+                data = json.loads(raw)
 
                 if isinstance(data, dict):
 
                     data = [data]
 
                 if not isinstance(data, list):
-
                     continue
+
 
                 for item in data:
 
-                    if not isinstance(
-                        item,
-                        dict
-                    ):
+                    if not isinstance(item, dict):
+                        continue
+
+
+                    # Handle @graph
+
+                    if "@graph" in item:
+
+                        graph = item["@graph"]
+
+                        if isinstance(graph, list):
+
+                            for graph_item in graph:
+
+                                if isinstance(
+                                    graph_item,
+                                    dict
+                                ):
+
+                                    data.append(
+                                        graph_item
+                                    )
 
                         continue
+
 
                     item_type = item.get(
                         "@type",
                         ""
                     )
 
-                    if item_type != "Event":
+                    if isinstance(
+                        item_type,
+                        list
+                    ):
 
+                        is_event = (
+                            "Event"
+                            in item_type
+                        )
+
+                    else:
+
+                        is_event = (
+                            item_type
+                            == "Event"
+                        )
+
+
+                    if not is_event:
                         continue
+
 
                     title = item.get(
                         "name",
                         ""
                     )
 
-                    start_date = item.get(
+                    start = item.get(
                         "startDate"
                     )
 
-                    end_date = item.get(
+                    end = item.get(
                         "endDate"
                     )
 
                     link = item.get(
                         "url",
-                        url
+                        ""
                     )
+
 
                     location = ""
 
@@ -575,132 +640,28 @@ with tab3:
                         "location"
                     )
 
+
                     if isinstance(
                         location_data,
                         dict
                     ):
 
-                        location = location_data.get(
-                            "name",
-                            ""
+                        location = (
+                            location_data.get(
+                                "name",
+                                ""
+                            )
                         )
 
-                    if title and start_date:
+                    elif isinstance(
+                        location_data,
+                        str
+                    ):
 
-                        add_event(
-
-                            organization=
-                            organization,
-
-                            title=title,
-
-                            start_date=start_date,
-
-                            end_date=end_date,
-
-                            event_type=event_type,
-
-                            link=link,
-
-                            location=location
-
+                        location = (
+                            location_data
                         )
 
-            except Exception:
-
-                continue
-
-
-        # --------------------------------------
-        # Fallback: visible page events
-        # --------------------------------------
-
-        if not any(
-            e["Organization"] == organization
-            for e in all_events
-        ):
-
-            text = soup.get_text(
-                "\n",
-                strip=True
-            )
-
-            date_pattern = re.compile(
-                r"\b("
-                r"January|February|March|April|May|June|"
-                r"July|August|September|October|November|December"
-                r")\s+"
-                r"(\d{1,2})"
-                r"(?:,\s*(\d{4}))?",
-                re.IGNORECASE
-            )
-
-            for match in date_pattern.finditer(
-                text
-            ):
-
-                try:
-
-                    month = match.group(1)
-                    day = match.group(2)
-                    year = match.group(3)
-
-                    if not year:
-
-                        year = str(
-                            datetime.now().year
-                        )
-
-                    event_date = pd.to_datetime(
-                        f"{month} {day}, {year}",
-                        errors="coerce"
-                    )
-
-                    if pd.isna(event_date):
-
-                        continue
-
-                    beginning = max(
-                        0,
-                        match.start() - 250
-                    )
-
-                    surrounding = text[
-                        beginning:
-                        match.start()
-                    ]
-
-                    lines = [
-                        x.strip()
-                        for x in surrounding.split("\n")
-                        if x.strip()
-                    ]
-
-                    if not lines:
-
-                        continue
-
-                    title = lines[-1]
-
-                    # Ignore obvious navigation text
-
-                    bad_titles = {
-
-                        "Events",
-                        "Event",
-                        "Calendar",
-                        "Events Calendar",
-                        "Upcoming Events",
-                        "View All Events",
-                        "Learn More",
-                        "Search",
-                        "Filter",
-                        "Apply"
-                    }
-
-                    if title in bad_titles:
-
-                        continue
 
                     add_event(
 
@@ -709,82 +670,1059 @@ with tab3:
 
                         title=title,
 
-                        start_date=event_date,
+                        start_date=start,
 
-                        event_type=event_type,
+                        end_date=end,
 
-                        link=url
+                        event_type=
+                        default_type,
+
+                        link=link,
+
+                        location=location
 
                     )
 
-                except Exception:
 
+            except Exception:
+
+                continue
+
+
+    # ==========================================
+    # ADA
+    # ==========================================
+
+    def scrape_ada():
+
+        url = (
+            "https://diabetes.org/events/"
+            "calendar-events"
+        )
+
+        html = get_html(url)
+
+        if not html:
+            return
+
+
+        # First try structured event data
+
+        before_count = len(
+            all_events
+        )
+
+        scrape_json_ld(
+            html,
+            "American Diabetes Association",
+            "ADA Event"
+        )
+
+
+        # If structured data worked,
+        # keep those results.
+
+        if len(all_events) > before_count:
+            return
+
+
+        soup = BeautifulSoup(
+            html,
+            "html.parser"
+        )
+
+
+        # ADA event cards
+
+        possible_cards = soup.select(
+            "article, "
+            "[class*='event'], "
+            "[class*='card']"
+        )
+
+
+        for card in possible_cards:
+
+            title_tag = card.find(
+                [
+                    "h2",
+                    "h3",
+                    "h4"
+                ]
+            )
+
+
+            if not title_tag:
+                continue
+
+
+            title = title_tag.get_text(
+                " ",
+                strip=True
+            )
+
+
+            card_text = card.get_text(
+                " ",
+                strip=True
+            )
+
+
+            date_match = re.search(
+
+                r"(January|February|March|April|May|June|"
+                r"July|August|September|October|November|December)"
+                r"\s+\d{1,2},?\s+\d{4}",
+
+                card_text,
+
+                re.IGNORECASE
+
+            )
+
+
+            if not date_match:
+                continue
+
+
+            event_date = pd.to_datetime(
+                date_match.group(0),
+                errors="coerce"
+            )
+
+
+            link_tag = card.find(
+                "a",
+                href=True
+            )
+
+
+            link = url
+
+
+            if link_tag:
+
+                link = link_tag["href"]
+
+                if link.startswith("/"):
+
+                    link = (
+                        "https://diabetes.org"
+                        + link
+                    )
+
+
+            add_event(
+
+                organization=
+                "American Diabetes Association",
+
+                title=title,
+
+                start_date=event_date,
+
+                event_type="ADA Event",
+
+                link=link
+
+            )
+
+
+    # ==========================================
+    # BREAKTHROUGH T1D
+    # ==========================================
+
+    def scrape_breakthrough():
+
+        base_url = (
+            "https://www.breakthrought1d.org/"
+            "discover-events/"
+        )
+
+
+        # Breakthrough currently uses
+        # many paginated event pages.
+
+        for page in range(1, 93):
+
+            if page == 1:
+
+                url = base_url
+
+            else:
+
+                url = (
+                    base_url
+                    + f"page/{page}/"
+                )
+
+
+            html = get_html(url)
+
+            if not html:
+                break
+
+
+            soup = BeautifulSoup(
+                html,
+                "html.parser"
+            )
+
+
+            # Find event links/cards
+
+            cards = soup.select(
+                "article, "
+                ".event, "
+                "[class*='event-card'], "
+                "[class*='event-item']"
+            )
+
+
+            found_on_page = 0
+
+
+            for card in cards:
+
+                title_tag = card.find(
+                    [
+                        "h2",
+                        "h3",
+                        "h4"
+                    ]
+                )
+
+
+                if not title_tag:
                     continue
 
 
+                title = title_tag.get_text(
+                    " ",
+                    strip=True
+                )
+
+
+                card_text = card.get_text(
+                    " ",
+                    strip=True
+                )
+
+
+                date_match = re.search(
+
+                    r"(January|February|March|April|May|June|"
+                    r"July|August|September|October|November|December)"
+                    r"\s+\d{1,2},\s+\d{4}",
+
+                    card_text,
+
+                    re.IGNORECASE
+
+                )
+
+
+                if not date_match:
+                    continue
+
+
+                event_date = pd.to_datetime(
+                    date_match.group(0),
+                    errors="coerce"
+                )
+
+
+                # Event type
+
+                event_type = (
+                    "Breakthrough T1D Event"
+                )
+
+
+                for possible_type in [
+
+                    "Community",
+                    "Walk",
+                    "T1D Support",
+                    "Research",
+                    "Gala",
+                    "Ride",
+                    "Golf",
+                    "Run / Endurance"
+
+                ]:
+
+                    if possible_type.lower() in (
+                        card_text.lower()
+                    ):
+
+                        event_type = (
+                            possible_type
+                        )
+
+                        break
+
+
+                # Location
+
+                location = ""
+
+                lines = [
+                    x.strip()
+                    for x in card.stripped_strings
+                ]
+
+
+                for line in lines:
+
+                    if (
+                        line != title
+                        and
+                        "Community" not in line
+                        and
+                        "Support" not in line
+                        and
+                        line
+                        != date_match.group(0)
+                    ):
+
+                        if len(line) > 5:
+
+                            location = line
+                            break
+
+
+                link_tag = card.find(
+                    "a",
+                    href=True
+                )
+
+
+                link = base_url
+
+
+                if link_tag:
+
+                    link = link_tag["href"]
+
+                    if link.startswith("/"):
+
+                        link = (
+                            "https://www.breakthrought1d.org"
+                            + link
+                        )
+
+
+                add_event(
+
+                    organization=
+                    "Breakthrough T1D",
+
+                    title=title,
+
+                    start_date=event_date,
+
+                    event_type=event_type,
+
+                    link=link,
+
+                    location=location
+
+                )
+
+                found_on_page += 1
+
+
+            # Fallback for pages where the
+            # event cards aren't exposed as
+            # normal HTML cards.
+
+            if found_on_page == 0:
+
+                text = soup.get_text(
+                    "\n",
+                    strip=True
+                )
+
+
+                date_matches = list(
+                    re.finditer(
+
+                        r"(January|February|March|April|May|June|"
+                        r"July|August|September|October|November|December)"
+                        r"\s+\d{1,2},\s+\d{4}",
+
+                        text,
+
+                        re.IGNORECASE
+
+                    )
+                )
+
+
+                for i, match in enumerate(
+                    date_matches
+                ):
+
+                    try:
+
+                        event_date = pd.to_datetime(
+                            match.group(0)
+                        )
+
+
+                        start = match.end()
+
+
+                        if (
+                            i + 1
+                            < len(date_matches)
+                        ):
+
+                            end = (
+                                date_matches[
+                                    i + 1
+                                ].start()
+                            )
+
+                        else:
+
+                            end = (
+                                start + 400
+                            )
+
+
+                        block = text[
+                            start:end
+                        ]
+
+
+                        lines = [
+
+                            x.strip()
+
+                            for x in
+                            block.split("\n")
+
+                            if x.strip()
+
+                        ]
+
+
+                        if not lines:
+                            continue
+
+
+                        # Pick the first plausible
+                        # title, not navigation.
+
+                        title = None
+
+
+                        for candidate in lines[:8]:
+
+                            if candidate in [
+                                "Community",
+                                "Walk",
+                                "Research",
+                                "T1D Support",
+                                "Search",
+                                "Location",
+                                "Event type"
+                            ]:
+
+                                continue
+
+
+                            if len(candidate) >= 5:
+
+                                title = candidate
+                                break
+
+
+                        if not title:
+                            continue
+
+
+                        add_event(
+
+                            organization=
+                            "Breakthrough T1D",
+
+                            title=title,
+
+                            start_date=event_date,
+
+                            event_type=
+                            "Breakthrough T1D Event",
+
+                            link=base_url
+
+                        )
+
+                    except Exception:
+
+                        continue
+
+
     # ==========================================
-    # UPDATE EVENTS
+    # CHILDREN WITH DIABETES
     # ==========================================
 
-    with st.spinner(
-        "🔄 Updating upcoming events..."
-    ):
+    def scrape_cwd():
 
-        scrape_generic(
-            "American Diabetes Association",
-            EVENT_SOURCES[
-                "American Diabetes Association"
-            ],
-            "Scientific / Professional"
+        url = (
+            "https://childrenwithdiabetes.com/events/"
         )
 
-        scrape_generic(
-            "Breakthrough T1D",
-            EVENT_SOURCES[
-                "Breakthrough T1D"
-            ],
-            "Advocacy / Community"
+        html = get_html(url)
+
+        if not html:
+            return
+
+
+        before_count = len(
+            all_events
         )
 
-        scrape_generic(
+
+        scrape_json_ld(
+            html,
             "Children with Diabetes",
-            EVENT_SOURCES[
-                "Children with Diabetes"
-            ],
-            "Patient / Family"
+            "Patient & Family Event"
         )
 
-        scrape_generic(
+
+        soup = BeautifulSoup(
+            html,
+            "html.parser"
+        )
+
+
+        # CWD has conference/event headings.
+
+        headings = soup.find_all(
+            [
+                "h2",
+                "h3",
+                "h4"
+            ]
+        )
+
+
+        for heading in headings:
+
+            title = heading.get_text(
+                " ",
+                strip=True
+            )
+
+
+            if not title:
+                continue
+
+
+            parent = heading.parent
+
+
+            if not parent:
+                continue
+
+
+            text = parent.get_text(
+                " ",
+                strip=True
+            )
+
+
+            date_match = re.search(
+
+                r"(January|February|March|April|May|June|"
+                r"July|August|September|October|November|December)"
+                r"\s+\d{1,2}"
+                r"(?:[-–]\d{1,2})?"
+                r",?\s+\d{4}",
+
+                text,
+
+                re.IGNORECASE
+
+            )
+
+
+            if not date_match:
+                continue
+
+
+            date_text = (
+                date_match.group(0)
+            )
+
+
+            start_text = re.sub(
+                r"[-–]\d{1,2}",
+                "",
+                date_text
+            )
+
+
+            start_date = pd.to_datetime(
+                start_text,
+                errors="coerce"
+            )
+
+
+            if pd.isna(start_date):
+                continue
+
+
+            add_event(
+
+                organization=
+                "Children with Diabetes",
+
+                title=title,
+
+                start_date=start_date,
+
+                event_type=
+                "Patient & Family Event",
+
+                link=url
+
+            )
+
+
+    # ==========================================
+    # TRIALNET
+    # ==========================================
+
+    def scrape_trialnet():
+
+        url = (
+            "https://www.trialnet.org/"
+            "news-events/events"
+        )
+
+        html = get_html(url)
+
+        if not html:
+            return
+
+
+        scrape_json_ld(
+            html,
             "TrialNet",
-            EVENT_SOURCES[
-                "TrialNet"
-            ],
             "Research / Screening"
         )
 
-        scrape_generic(
-            "T1D Exchange",
-            EVENT_SOURCES[
-                "T1D Exchange"
-            ],
-            "Research / Professional"
+
+        soup = BeautifulSoup(
+            html,
+            "html.parser"
         )
 
-        scrape_generic(
+
+        # TrialNet event listings
+
+        cards = soup.select(
+            "article, "
+            "[class*='event'], "
+            "[class*='views-row']"
+        )
+
+
+        for card in cards:
+
+            title_tag = card.find(
+                [
+                    "h2",
+                    "h3",
+                    "h4"
+                ]
+            )
+
+
+            if not title_tag:
+                continue
+
+
+            title = title_tag.get_text(
+                " ",
+                strip=True
+            )
+
+
+            text = card.get_text(
+                " ",
+                strip=True
+            )
+
+
+            date_match = re.search(
+
+                r"(January|February|March|April|May|June|"
+                r"July|August|September|October|November|December)"
+                r"\s+\d{1,2}"
+                r"(?:,\s+\d{4})?",
+
+                text,
+
+                re.IGNORECASE
+
+            )
+
+
+            if not date_match:
+                continue
+
+
+            date_text = (
+                date_match.group(0)
+            )
+
+
+            if "," not in date_text:
+
+                date_text += (
+                    f", {datetime.now().year}"
+                )
+
+
+            event_date = pd.to_datetime(
+                date_text,
+                errors="coerce"
+            )
+
+
+            if pd.isna(event_date):
+                continue
+
+
+            add_event(
+
+                organization="TrialNet",
+
+                title=title,
+
+                start_date=event_date,
+
+                event_type=
+                "Research / Screening",
+
+                link=url
+
+            )
+
+
+    # ==========================================
+    # T1D EXCHANGE
+    # ==========================================
+
+    def scrape_t1dx():
+
+        url = (
+            "https://t1dexchange.org/"
+            "learning-sessions"
+        )
+
+        html = get_html(url)
+
+        if not html:
+            return
+
+
+        # This page has a clear named
+        # Learning Session and date.
+
+        soup = BeautifulSoup(
+            html,
+            "html.parser"
+        )
+
+
+        headings = soup.find_all(
+            [
+                "h1",
+                "h2",
+                "h3",
+                "h4"
+            ]
+        )
+
+
+        for heading in headings:
+
+            title = heading.get_text(
+                " ",
+                strip=True
+            )
+
+
+            if not title:
+                continue
+
+
+            if (
+                "Learning Session"
+                not in title
+            ):
+
+                continue
+
+
+            parent = heading.parent
+
+
+            if not parent:
+                continue
+
+
+            text = parent.get_text(
+                " ",
+                strip=True
+            )
+
+
+            date_match = re.search(
+
+                r"(January|February|March|April|May|June|"
+                r"July|August|September|October|November|December)"
+                r"\s+\d{1,2}"
+                r"(?:[-–]\d{1,2})?"
+                r",\s+\d{4}",
+
+                text,
+
+                re.IGNORECASE
+
+            )
+
+
+            if not date_match:
+                continue
+
+
+            date_text = (
+                date_match.group(0)
+            )
+
+
+            start_text = re.sub(
+                r"[-–]\d{1,2}",
+                "",
+                date_text
+            )
+
+
+            start_date = pd.to_datetime(
+                start_text,
+                errors="coerce"
+            )
+
+
+            if pd.isna(start_date):
+                continue
+
+
+            add_event(
+
+                organization="T1D Exchange",
+
+                title=title,
+
+                start_date=start_date,
+
+                event_type=
+                "Research / Professional",
+
+                link=url,
+
+                location=
+                "San Diego, CA"
+
+            )
+
+
+    # ==========================================
+    # THE DIABETES LINK
+    # ==========================================
+
+    def scrape_diabetes_link():
+
+        url = (
+            "https://www.thediabeteslink.org/"
+            "events"
+        )
+
+        html = get_html(url)
+
+        if not html:
+            return
+
+
+        scrape_json_ld(
+            html,
             "The Diabetes Link",
-            EVENT_SOURCES[
-                "The Diabetes Link"
-            ],
             "Community / Advocacy"
         )
 
-        scrape_generic(
-            "Beyond Type 1",
-            EVENT_SOURCES[
-                "Beyond Type 1"
-            ],
-            "Community / Advocacy"
+
+        soup = BeautifulSoup(
+            html,
+            "html.parser"
         )
+
+
+        cards = soup.select(
+            "article, "
+            "[class*='event'], "
+            "[class*='card']"
+        )
+
+
+        for card in cards:
+
+            title_tag = card.find(
+                [
+                    "h2",
+                    "h3",
+                    "h4"
+                ]
+            )
+
+
+            if not title_tag:
+                continue
+
+
+            title = title_tag.get_text(
+                " ",
+                strip=True
+            )
+
+
+            text = card.get_text(
+                " ",
+                strip=True
+            )
+
+
+            date_match = re.search(
+
+                r"(January|February|March|April|May|June|"
+                r"July|August|September|October|November|December)"
+                r"\s+\d{1,2}"
+                r"(?:,\s+\d{4})?",
+
+                text,
+
+                re.IGNORECASE
+
+            )
+
+
+            if not date_match:
+                continue
+
+
+            date_text = (
+                date_match.group(0)
+            )
+
+
+            if "," not in date_text:
+
+                date_text += (
+                    f", {datetime.now().year}"
+                )
+
+
+            event_date = pd.to_datetime(
+                date_text,
+                errors="coerce"
+            )
+
+
+            if pd.isna(event_date):
+                continue
+
+
+            link_tag = card.find(
+                "a",
+                href=True
+            )
+
+
+            link = url
+
+
+            if link_tag:
+
+                link = link_tag["href"]
+
+                if link.startswith("/"):
+
+                    link = (
+                        "https://www.thediabeteslink.org"
+                        + link
+                    )
+
+
+            add_event(
+
+                organization=
+                "The Diabetes Link",
+
+                title=title,
+
+                start_date=event_date,
+
+                event_type=
+                "Community / Advocacy",
+
+                link=link
+
+            )
+
+
+    # ==========================================
+    # BEYOND TYPE 1
+    # ==========================================
+
+    def scrape_beyond():
+
+        # Beyond Type 1 currently does not expose
+        # a conventional public event calendar like
+        # Breakthrough T1D or ADA.
+        #
+        # Keep the source link available rather than
+        # inventing event records.
+
+        return
+
+
+    # ==========================================
+    # RUN ALL SCRAPERS
+    # ==========================================
+
+    with st.spinner(
+        "🔄 Pulling current event data..."
+    ):
+
+        scrape_ada()
+
+        scrape_breakthrough()
+
+        scrape_cwd()
+
+        scrape_trialnet()
+
+        scrape_t1dx()
+
+        scrape_diabetes_link()
+
+        scrape_beyond()
 
 
     # ==========================================
@@ -797,6 +1735,9 @@ with tab3:
             all_events
         )
 
+
+        # Remove duplicate records
+
         events_df = events_df.drop_duplicates(
             subset=[
                 "Organization",
@@ -805,9 +1746,44 @@ with tab3:
             ]
         )
 
+
+        # Remove obviously bad titles
+
+        bad_words = [
+
+            "search",
+            "register",
+            "learn more",
+            "view details",
+            "apply filters",
+            "clear filters",
+            "event calendar",
+            "upcoming events"
+
+        ]
+
+
+        events_df = events_df[
+            ~events_df["Event"].str.lower().isin(
+                bad_words
+            )
+        ]
+
+
+        # Keep current/future events
+
+        today = pd.Timestamp.today().normalize()
+
+
+        events_df = events_df[
+            events_df["End Date"] >= today
+        ]
+
+
         events_df = events_df.sort_values(
             "Start Date"
         )
+
 
         events = events_df.to_dict(
             "records"
@@ -819,168 +1795,247 @@ with tab3:
 
 
     # ==========================================
-    # SOURCE STATUS
+    # SOURCE COUNTS
     # ==========================================
 
-    st.markdown("### 📡 Event Data Status")
-
-    status_cols = st.columns(4)
-
-    total_events = len(events)
-
-    organizations_found = len(
-        set(
-            event["Organization"]
-            for event in events
-        )
+    st.markdown(
+        "### 📡 Events Currently Loaded"
     )
 
-    with status_cols[0]:
 
-        st.metric(
-            "📅 Events Found",
-            total_events
+    source_names = [
+
+        "American Diabetes Association",
+        "Breakthrough T1D",
+        "Children with Diabetes",
+        "TrialNet",
+        "T1D Exchange",
+        "The Diabetes Link"
+
+    ]
+
+
+    source_cols = st.columns(
+        len(source_names)
+    )
+
+
+    for i, source_name in enumerate(
+        source_names
+    ):
+
+        count = len(
+            [
+                e
+                for e in events
+                if e["Organization"]
+                == source_name
+            ]
         )
 
-    with status_cols[1]:
 
-        st.metric(
-            "🏢 Organizations",
-            organizations_found
-        )
+        with source_cols[i]:
 
-    with status_cols[2]:
-
-        st.metric(
-            "🔗 Official Calendars",
-            len(EVENT_SOURCES)
-        )
-
-    with status_cols[3]:
-
-        st.metric(
-            "🔄 Data Driven",
-            "Yes"
-        )
+            st.metric(
+                source_name,
+                count
+            )
 
 
     st.divider()
 
 
     # ==========================================
-    # ORGANIZATION FILTER
+    # FILTER
     # ==========================================
 
-    st.markdown("### 🔎 Upcoming Events")
+    col1, col2 = st.columns(2)
 
 
-    organization_options = [
-        "All Organizations"
-    ] + sorted(
-        list(
-            set(
-                event["Organization"]
-                for event in events
+    with col1:
+
+        organizations = [
+            "All Organizations"
+        ] + sorted(
+            list(
+                set(
+                    e["Organization"]
+                    for e in events
+                )
             )
         )
+
+
+        selected_org = st.selectbox(
+            "🏢 Organization",
+            organizations
+        )
+
+
+    with col2:
+
+        event_types = [
+            "All Event Types"
+        ] + sorted(
+            list(
+                set(
+                    e["Type"]
+                    for e in events
+                )
+            )
+        )
+
+
+        selected_type = st.selectbox(
+            "🏷️ Event Type",
+            event_types
+        )
+
+
+    filtered_events = events
+
+
+    if selected_org != "All Organizations":
+
+        filtered_events = [
+
+            e for e in filtered_events
+
+            if e["Organization"]
+            == selected_org
+
+        ]
+
+
+    if selected_type != "All Event Types":
+
+        filtered_events = [
+
+            e for e in filtered_events
+
+            if e["Type"]
+            == selected_type
+
+        ]
+
+
+    # ==========================================
+    # UPCOMING EVENTS
+    # ==========================================
+
+    st.markdown(
+        "## 📌 Upcoming Events"
     )
 
 
-    selected_organization = st.selectbox(
-        "Filter by organization",
-        organization_options
-    )
-# ==========================================
-# UPCOMING EVENTS
-# ==========================================
+    if filtered_events:
 
-st.divider()
+        for event in filtered_events[:50]:
 
-st.markdown("## 📌 Upcoming Events")
+            with st.container(
+                border=True
+            ):
 
-today = pd.Timestamp.today().normalize()
+                # ==================================
+                # REAL EVENT NAME
+                # ==================================
 
-upcoming_events = sorted(
-    [
-        event
-        for event in events
-        if event["End Date"] >= today
-    ],
-    key=lambda x: x["Start Date"]
-)
+                st.markdown(
+                    f"## {event['Event']}"
+                )
 
-if upcoming_events:
 
-    for event in upcoming_events[:20]:
+                # ==================================
+                # ORGANIZATION
+                # ==================================
 
-        with st.container(border=True):
+                st.markdown(
+                    f"**{event['Organization']}**"
+                )
 
-            # ==================================
-            # EVENT TITLE — BIGGEST ELEMENT
-            # ==================================
 
-            st.markdown(
-                f"# {event['Event']}"
-            )
+                st.caption(
+                    event["Type"]
+                )
 
-            # ==================================
-            # ORGANIZATION + EVENT TYPE
-            # ==================================
 
-            st.caption(
-                f"🏢 {event['Organization']}  •  "
-                f"{event['Type']}"
-            )
+                # ==================================
+                # DATE
+                # ==================================
 
-            # ==================================
-            # DATE + LOCATION
-            # ==================================
+                if (
+                    event["Start Date"]
+                    == event["End Date"]
+                ):
 
-            col1, col2 = st.columns(2)
-
-            with col1:
-
-                if event["Start Date"] == event["End Date"]:
-
-                    date_text = event["Start Date"].strftime(
-                        "%B %d, %Y"
+                    date_text = (
+                        event["Start Date"]
+                        .strftime(
+                            "%B %d, %Y"
+                        )
                     )
 
                 else:
 
                     date_text = (
-                        event["Start Date"].strftime("%B %d, %Y")
+
+                        event["Start Date"]
+                        .strftime(
+                            "%B %d, %Y"
+                        )
+
                         + " – "
-                        + event["End Date"].strftime("%B %d, %Y")
+
+                        + event["End Date"]
+                        .strftime(
+                            "%B %d, %Y"
+                        )
+
                     )
+
 
                 st.markdown(
                     f"📅 **{date_text}**"
                 )
 
-            with col2:
+
+                # ==================================
+                # LOCATION
+                # ==================================
 
                 if event["Location"]:
 
                     st.markdown(
-                        f"📍 **{event['Location']}**"
+                        f"📍 {event['Location']}"
                     )
 
-            st.write("")
 
-            # ==================================
-            # VIEW EVENT BUTTON
-            # ==================================
+                st.write("")
 
-            if event["Link"]:
 
-                st.link_button(
-                    "View Event →",
-                    event["Link"],
-                    use_container_width=False
-                )
+                # ==================================
+                # EVENT LINK
+                # ==================================
 
-            st.write("")
+                if event["Link"]:
+
+                    st.link_button(
+                        "View Event →",
+                        event["Link"]
+                    )
+
+
+                st.write("")
+
+
+    else:
+
+        st.info(
+            "No upcoming events were found "
+            "from the available public event pages."
+        )
+
+
     # ==========================================
     # FOOTER
     # ==========================================
@@ -988,8 +2043,9 @@ if upcoming_events:
     st.divider()
 
     st.caption(
-        "Event information is pulled from public organization "
-        "event pages when the dashboard loads. Use the official "
-        "calendar links above for the most complete and current "
-        "event information."
+        "Event information is retrieved from the "
+        "organizations' public event pages when "
+        "the dashboard loads. Because each organization "
+        "uses a different calendar platform, availability "
+        "and update timing may vary by source."
     )
