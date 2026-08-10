@@ -140,12 +140,6 @@ with tab2:
                 )
 
 
-            if pd.notna(row["YouTube"]):
-                st.link_button(
-                    "▶️ YouTube",
-                    row["YouTube"]
-                )
-
 
 # ==========================================
 # EVENTS TAB
