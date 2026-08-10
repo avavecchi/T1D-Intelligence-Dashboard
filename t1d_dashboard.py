@@ -151,6 +151,8 @@ with tab2:
     # DISPLAY ORGANIZATIONS
     # ==========================================
 
+   pag_data = pd.read_csv("PAG_database.csv")
+
     for index, row in pag_data.iterrows():
 
         organization = row["Organization"]
