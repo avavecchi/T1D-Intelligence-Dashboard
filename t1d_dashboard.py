@@ -169,7 +169,7 @@ with tab2:
         )
 
         with st.expander(
-            f"💙 {organization}",
+            f" {organization}",
             expanded=False
         ):
 
