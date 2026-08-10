@@ -1795,57 +1795,6 @@ with tab3:
 
 
     # ==========================================
-    # SOURCE COUNTS
-    # ==========================================
-
-    st.markdown(
-        "### 📡 Events Currently Loaded"
-    )
-
-
-    source_names = [
-
-        "American Diabetes Association",
-        "Breakthrough T1D",
-        "Children with Diabetes",
-        "TrialNet",
-        "T1D Exchange",
-        "The Diabetes Link"
-
-    ]
-
-
-    source_cols = st.columns(
-        len(source_names)
-    )
-
-
-    for i, source_name in enumerate(
-        source_names
-    ):
-
-        count = len(
-            [
-                e
-                for e in events
-                if e["Organization"]
-                == source_name
-            ]
-        )
-
-
-        with source_cols[i]:
-
-            st.metric(
-                source_name,
-                count
-            )
-
-
-    st.divider()
-
-
-    # ==========================================
     # FILTER
     # ==========================================
 
