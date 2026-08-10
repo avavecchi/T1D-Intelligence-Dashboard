@@ -150,65 +150,117 @@ with tab2:
 
 
 # RESEARCH TAB
+
 with tab3:
 
     st.header("📆 T1D Intelligence Timeline")
 
     st.caption(
-        "Daily tracking of advocacy, research, policy, and community updates"
+        "Daily tracking of T1D research, advocacy, policy, and community updates"
     )
 
-    import pandas as pd
+    try:
 
+        intelligence = pd.read_csv("T1D_Intelligence.csv")
 
-    intelligence = pd.read_csv(
-        "T1D_Intelligence.csv"
-    )
+        if intelligence.empty:
+            st.info("No intelligence updates are available yet.")
 
+        else:
 
-    intelligence["Date"] = pd.to_datetime(
-        intelligence["Date"]
-    )
-
-
-    selected_date = st.date_input(
-        "Select a date",
-        intelligence["Date"].max()
-    )
-
-
-    updates = intelligence[
-        intelligence["Date"] == pd.Timestamp(selected_date)
-    ]
-
-
-    if not updates.empty:
-
-        for _, row in updates.iterrows():
-
-            st.subheader(
-                row["Title"]
+            # Make sure dates are properly formatted
+            intelligence["Date"] = pd.to_datetime(
+                intelligence["Date"],
+                errors="coerce"
             )
 
-            st.write(
-                f"""
-                **Category:** {row["Category"]}
-
-                **Organization:** {row["Organization"]}
-                """
+            # Remove rows with invalid dates
+            intelligence = intelligence.dropna(
+                subset=["Date"]
             )
 
-            st.link_button(
-                "Read More",
-                row["Link"]
+            # Convert to date only
+            intelligence["Date"] = intelligence["Date"].dt.date
+
+            # Sort newest → oldest
+            intelligence = intelligence.sort_values(
+                "Date",
+                ascending=False
             )
 
-            st.divider()
+            # Get available dates
+            available_dates = sorted(
+                intelligence["Date"].unique(),
+                reverse=True
+            )
 
-    else:
+            # Create date labels
+            date_options = {
+                date: date.strftime("%A, %B %d, %Y")
+                for date in available_dates
+            }
 
-        st.info(
-            "No intelligence updates available for this date."
+            selected_date = st.selectbox(
+                "📅 Select a day",
+                options=available_dates,
+                format_func=lambda x: date_options[x]
+            )
+
+            # Get updates for selected day
+            updates = intelligence[
+                intelligence["Date"] == selected_date
+            ]
+
+            st.markdown(
+                f"### 📰 Updates from {selected_date.strftime('%B %d, %Y')}"
+            )
+
+            if updates.empty:
+
+                st.info(
+                    "No intelligence updates available for this date."
+                )
+
+            else:
+
+                st.caption(
+                    f"{len(updates)} update(s) found"
+                )
+
+                for _, row in updates.iterrows():
+
+                    st.subheader(
+                        row["Title"]
+                    )
+
+                    st.write(
+                        f"**Category:** {row['Category']}"
+                    )
+
+                    st.write(
+                        f"**Organization:** {row['Organization']}"
+                    )
+
+                    if pd.notna(row["Link"]):
+
+                        st.link_button(
+                            "🔗 Read More",
+                            row["Link"]
+                        )
+
+                    st.divider()
+
+    except FileNotFoundError:
+
+        st.warning(
+            "T1D_Intelligence.csv was not found. "
+            "Run the daily intelligence update first."
+        )
+
+    except Exception as e:
+
+        st.error(
+            f"Unable to load the intelligence database: {e}"
         )
 
 # EVENTS TAB
