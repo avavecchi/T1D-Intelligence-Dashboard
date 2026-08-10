@@ -12,10 +12,9 @@ st.title("🩺 Type 1 Diabetes Intelligence Dashboard")
 st.caption("Patient advocacy, research, policy, and social media hub")
 
 
-tab1, tab2, tab3, tab4, tab5 = st.tabs([
+tab1, tab2, tab3, tab4 = st.tabs([
     "📰 News",
     "🤝 PAG Directory",
-    "🔬 Research",
     "📅 Events",
     "⭐ Daily Brief"
 ])
@@ -148,123 +147,8 @@ with tab2:
                 )
 
 
-
-# RESEARCH TAB
-
-with tab3:
-
-    st.header("📆 T1D Intelligence Timeline")
-
-    st.caption(
-        "Daily tracking of T1D research, advocacy, policy, and community updates"
-    )
-
-    try:
-
-        intelligence = pd.read_csv("T1D_Intelligence.csv")
-
-        if intelligence.empty:
-            st.info("No intelligence updates are available yet.")
-
-        else:
-
-            # Make sure dates are properly formatted
-            intelligence["Date"] = pd.to_datetime(
-                intelligence["Date"],
-                errors="coerce"
-            )
-
-            # Remove rows with invalid dates
-            intelligence = intelligence.dropna(
-                subset=["Date"]
-            )
-
-            # Convert to date only
-            intelligence["Date"] = intelligence["Date"].dt.date
-
-            # Sort newest → oldest
-            intelligence = intelligence.sort_values(
-                "Date",
-                ascending=False
-            )
-
-            # Get available dates
-            available_dates = sorted(
-                intelligence["Date"].unique(),
-                reverse=True
-            )
-
-            # Create date labels
-            date_options = {
-                date: date.strftime("%A, %B %d, %Y")
-                for date in available_dates
-            }
-
-            selected_date = st.selectbox(
-                "📅 Select a day",
-                options=available_dates,
-                format_func=lambda x: date_options[x]
-            )
-
-            # Get updates for selected day
-            updates = intelligence[
-                intelligence["Date"] == selected_date
-            ]
-
-            st.markdown(
-                f"### 📰 Updates from {selected_date.strftime('%B %d, %Y')}"
-            )
-
-            if updates.empty:
-
-                st.info(
-                    "No intelligence updates available for this date."
-                )
-
-            else:
-
-                st.caption(
-                    f"{len(updates)} update(s) found"
-                )
-
-                for _, row in updates.iterrows():
-
-                    st.subheader(
-                        row["Title"]
-                    )
-
-                    st.write(
-                        f"**Category:** {row['Category']}"
-                    )
-
-                    st.write(
-                        f"**Organization:** {row['Organization']}"
-                    )
-
-                    if pd.notna(row["Link"]):
-
-                        st.link_button(
-                            "🔗 Read More",
-                            row["Link"]
-                        )
-
-                    st.divider()
-
-    except FileNotFoundError:
-
-        st.warning(
-            "T1D_Intelligence.csv was not found. "
-            "Run the daily intelligence update first."
-        )
-
-    except Exception as e:
-
-        st.error(
-            f"Unable to load the intelligence database: {e}"
-        )
-
 # EVENTS TAB
-with tab4:
+with tab3:
 
     st.header("📅 T1D Events")
 
@@ -332,7 +216,7 @@ with tab4:
         st.divider()
 
 # DAILY BRIEF TAB
-with tab5:
+with tab4:
 
     st.header("⭐ Daily T1D Intelligence Brief")
 
