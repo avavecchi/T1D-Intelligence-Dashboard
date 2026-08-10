@@ -136,85 +136,94 @@ with tab1:
 
         st.divider()
 
+# ==========================================
 # PAG DIRECTORY TAB
+# ==========================================
+
 with tab2:
 
     st.header("🤝 T1D Patient Advocacy Organization Hub")
+
     st.caption(
         "Explore leading Type 1 Diabetes organizations, news, and social media."
     )
-# ==========================================
-# VERIFIED ORGANIZATION LINKS
-# ==========================================
-
-verified_links = {
-
-    "American Diabetes Association": {
-        "Website": "https://diabetes.org/",
-        "News": "https://diabetes.org/newsroom",
-        "Instagram": "https://www.instagram.com/amdiabetesassn/",
-        "LinkedIn": "https://www.linkedin.com/company/american-diabetes-association/",
-        "X": "https://x.com/AmDiabetesAssn"
-    },
-
-    "Breakthrough T1D": {
-        "Website": "https://www.breakthrought1d.org/",
-        "News": "https://www.breakthrought1d.org/news/",
-        "Instagram": "https://www.instagram.com/breakthrought1d/",
-        "LinkedIn": "https://www.linkedin.com/company/breakthrought1d/",
-        "X": "https://x.com/BreakthroughT1D"
-    },
-
-    "Beyond Type 1": {
-        "Website": "https://beyondtype1.org/",
-        "News": "https://beyondtype1.org/resources/?filter=news",
-        "Instagram": "https://www.instagram.com/beyondtype1/",
-        "LinkedIn": "https://www.linkedin.com/company/beyond-type1/",
-        "X": "https://x.com/BeyondType1"
-    },
-
-    "Children with Diabetes": {
-        "Website": "https://childrenwithdiabetes.com/",
-        "News": "https://childrenwithdiabetes.com/news/",
-        "Instagram": "https://www.instagram.com/childrenwithdiabetes/",
-        "LinkedIn": "https://www.linkedin.com/company/children-with-diabetes/",
-        "X": "https://x.com/cwdiabetes"
-    },
-
-    "T1D Exchange": {
-        "Website": "https://t1dexchange.org/",
-        "News": "https://t1dexchange.org/articles/",
-        "Instagram": "https://www.instagram.com/t1dexchange/",
-        "LinkedIn": "https://www.linkedin.com/company/t1d-exchange/",
-        "X": "https://x.com/T1DExchange"
-    },
-
-    "The Diabetes Link": {
-        "Website": "https://www.thediabeteslink.org/",
-        "Events": "https://www.thediabeteslink.org/events",
-        "Instagram": "https://www.instagram.com/thediabeteslink/",
-        "X": "https://x.com/thediabeteslink"
-    }
-
-}
 
     # ==========================================
-    # DISPLAY ORGANIZATIONS
+    # VERIFIED ORGANIZATION LINKS
+    # ==========================================
+
+    verified_links = {
+
+        "American Diabetes Association": {
+            "Website": "https://diabetes.org/",
+            "News": "https://diabetes.org/newsroom",
+            "Instagram": "https://www.instagram.com/amdiabetesassn/",
+            "LinkedIn": "https://www.linkedin.com/company/american-diabetes-association/",
+            "X": "https://x.com/AmDiabetesAssn"
+        },
+
+        "Breakthrough T1D": {
+            "Website": "https://www.breakthrought1d.org/",
+            "News": "https://www.breakthrought1d.org/news/",
+            "Instagram": "https://www.instagram.com/breakthrought1d/",
+            "LinkedIn": "https://www.linkedin.com/company/breakthrought1d/",
+            "X": "https://x.com/BreakthroughT1D"
+        },
+
+        "Beyond Type 1": {
+            "Website": "https://beyondtype1.org/",
+            "News": "https://beyondtype1.org/resources/?filter=news",
+            "Instagram": "https://www.instagram.com/beyondtype1/",
+            "LinkedIn": "https://www.linkedin.com/company/beyond-type1/",
+            "X": "https://x.com/BeyondType1"
+        },
+
+        "Children with Diabetes": {
+            "Website": "https://childrenwithdiabetes.com/",
+            "News": "https://childrenwithdiabetes.com/news/",
+            "Instagram": "https://www.instagram.com/childrenwithdiabetes/",
+            "LinkedIn": "https://www.linkedin.com/company/children-with-diabetes/",
+            "X": "https://x.com/cwdiabetes"
+        },
+
+        "T1D Exchange": {
+            "Website": "https://t1dexchange.org/",
+            "News": "https://t1dexchange.org/articles/",
+            "Instagram": "https://www.instagram.com/t1dexchange/",
+            "LinkedIn": "https://www.linkedin.com/company/t1d-exchange/",
+            "X": "https://x.com/T1DExchange"
+        },
+
+        "The Diabetes Link": {
+            "Website": "https://www.thediabeteslink.org/",
+            "Events": "https://www.thediabeteslink.org/events",
+            "Instagram": "https://www.instagram.com/thediabeteslink/",
+            "X": "https://x.com/thediabeteslink"
+        }
+
+    }
+
+    # ==========================================
+    # LOAD PAG DATABASE
     # ==========================================
 
     pag_data = pd.read_csv("PAG_database.csv")
 
-    # Remove Diabetes Leadership Council from the PAG Directory
+    # Remove Diabetes Leadership Council
     pag_data = pag_data[
         pag_data["Organization"] != "Diabetes Leadership Council"
     ]
+
+    # ==========================================
+    # DISPLAY ORGANIZATIONS
+    # ==========================================
 
     for index, row in pag_data.iterrows():
 
         organization = row["Organization"]
 
         # Use verified links when available.
-        # Fall back to the CSV for organizations not listed above.
+        # Fall back to CSV for other organizations.
         links = verified_links.get(
             organization,
             {
@@ -245,21 +254,33 @@ verified_links = {
 
             with col1:
 
-                if links["Website"]:
+                if links.get("Website"):
                     st.link_button(
                         "🌐 Website",
                         links["Website"],
                         use_container_width=True
                     )
 
-                if links["News"]:
-                    st.link_button(
-                        "📰 News",
-                        links["News"],
-                        use_container_width=True
-                    )
+                # The Diabetes Link uses Events instead of News
+                if organization == "The Diabetes Link":
 
-                if links["Instagram"]:
+                    if links.get("Events"):
+                        st.link_button(
+                            "📅 Events",
+                            links["Events"],
+                            use_container_width=True
+                        )
+
+                else:
+
+                    if links.get("News"):
+                        st.link_button(
+                            "📰 News",
+                            links["News"],
+                            use_container_width=True
+                        )
+
+                if links.get("Instagram"):
                     st.link_button(
                         "📸 Instagram",
                         links["Instagram"],
@@ -268,14 +289,17 @@ verified_links = {
 
             with col2:
 
-                if links["LinkedIn"]:
-                    st.link_button(
-                        "💼 LinkedIn",
-                        links["LinkedIn"],
-                        use_container_width=True
-                    )
+                # The Diabetes Link does NOT have LinkedIn
+                if organization != "The Diabetes Link":
 
-                if links["X"]:
+                    if links.get("LinkedIn"):
+                        st.link_button(
+                            "💼 LinkedIn",
+                            links["LinkedIn"],
+                            use_container_width=True
+                        )
+
+                if links.get("X"):
                     st.link_button(
                         "🐦 X",
                         links["X"],
