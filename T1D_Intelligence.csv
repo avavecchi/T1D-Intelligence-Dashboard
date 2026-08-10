@@ -1,4 +1,161 @@
-Date,Category,Organization,Title,Link
-2026-08-06,Advocacy,American Diabetes Association,ADA advocacy update,https://diabetes.org
-2026-08-06,Patient Resources,Breakthrough T1D,Back to school resources for families,https://www.breakthrought1d.org
-2026-08-06,Research,T1D Exchange,T1D research update,https://t1dexchange.org
+import feedparser
+import pandas as pd
+from datetime import datetime
+
+CSV_FILE = "T1D_Intelligence.csv"
+
+
+# ==========================================
+# SOURCES
+# ==========================================
+
+sources = {
+
+    "American Diabetes Association":
+        "https://diabetes.org/rss.xml",
+
+    "Breakthrough T1D":
+        "https://www.breakthrought1d.org/feed/",
+
+    "Beyond Type 1":
+        "https://beyondtype1.org/feed/",
+
+    "Children with Diabetes":
+        "https://childrenwithdiabetes.com/feed/",
+
+    "T1D Exchange":
+        "https://t1dexchange.org/feed/"
+}
+
+
+# ==========================================
+# LOAD EXISTING DATABASE
+# ==========================================
+
+try:
+
+    intelligence = pd.read_csv(CSV_FILE)
+
+except FileNotFoundError:
+
+    intelligence = pd.DataFrame(
+        columns=[
+            "Date",
+            "Title",
+            "Category",
+            "Organization",
+            "Link"
+        ]
+    )
+
+
+# ==========================================
+# TODAY
+# ==========================================
+
+today = datetime.now().strftime("%Y-%m-%d")
+
+
+new_articles = []
+
+
+# ==========================================
+# COLLECT ARTICLES
+# ==========================================
+
+for organization, feed_url in sources.items():
+
+    print(f"Checking {organization}...")
+
+    try:
+
+        feed = feedparser.parse(feed_url)
+
+        for article in feed.entries[:10]:
+
+            title = article.get(
+                "title",
+                "Untitled"
+            )
+
+            link = article.get(
+                "link",
+                ""
+            )
+
+            new_articles.append({
+                "Date": today,
+                "Title": title,
+                "Category": "Research & Intelligence",
+                "Organization": organization,
+                "Link": link
+            })
+
+    except Exception as e:
+
+        print(
+            f"Unable to load {organization}: {e}"
+        )
+
+
+# ==========================================
+# ADD NEW ARTICLES
+# ==========================================
+
+if new_articles:
+
+    new_df = pd.DataFrame(
+        new_articles
+    )
+
+    intelligence = pd.concat(
+        [
+            intelligence,
+            new_df
+        ],
+        ignore_index=True
+    )
+
+
+# ==========================================
+# REMOVE DUPLICATES
+# ==========================================
+
+intelligence = intelligence.drop_duplicates(
+    subset=["Link"],
+    keep="last"
+)
+
+
+# ==========================================
+# SORT
+# ==========================================
+
+intelligence["Date"] = pd.to_datetime(
+    intelligence["Date"],
+    errors="coerce"
+)
+
+intelligence = intelligence.sort_values(
+    "Date",
+    ascending=False
+)
+
+
+# ==========================================
+# SAVE
+# ==========================================
+
+intelligence.to_csv(
+    CSV_FILE,
+    index=False
+)
+
+
+print(
+    f"Successfully updated intelligence database."
+)
+
+print(
+    f"Total articles: {len(intelligence)}"
+)
