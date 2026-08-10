@@ -890,136 +890,97 @@ with tab3:
         "Filter by organization",
         organization_options
     )
+# ==========================================
+# UPCOMING EVENTS
+# ==========================================
 
+st.divider()
 
-    # ==========================================
-    # UPCOMING EVENTS
-    # ==========================================
+st.markdown("## 📌 Upcoming Events")
 
-    today = pd.Timestamp.today().normalize()
+today = pd.Timestamp.today().normalize()
 
-
-    upcoming_events = [
-
+upcoming_events = sorted(
+    [
         event
         for event in events
-
         if event["End Date"] >= today
+    ],
+    key=lambda x: x["Start Date"]
+)
 
-    ]
+if upcoming_events:
 
+    for event in upcoming_events[:20]:
 
-    if (
-        selected_organization
-        != "All Organizations"
-    ):
+        with st.container(border=True):
 
-        upcoming_events = [
+            # ==================================
+            # EVENT TITLE — BIGGEST ELEMENT
+            # ==================================
 
-            event
-            for event in upcoming_events
+            st.markdown(
+                f"# {event['Event']}"
+            )
 
-            if event["Organization"]
-            == selected_organization
+            # ==================================
+            # ORGANIZATION + EVENT TYPE
+            # ==================================
 
-        ]
+            st.caption(
+                f"🏢 {event['Organization']}  •  "
+                f"{event['Type']}"
+            )
 
+            # ==================================
+            # DATE + LOCATION
+            # ==================================
 
-    upcoming_events = sorted(
-        upcoming_events,
-        key=lambda x: x["Start Date"]
-    )
+            col1, col2 = st.columns(2)
 
+            with col1:
 
-    if upcoming_events:
+                if event["Start Date"] == event["End Date"]:
 
-        for event in upcoming_events:
+                    date_text = event["Start Date"].strftime(
+                        "%B %d, %Y"
+                    )
 
-            with st.container(
-                border=True
-            ):
+                else:
 
-                col1, col2 = st.columns(
-                    [5, 1]
+                    date_text = (
+                        event["Start Date"].strftime("%B %d, %Y")
+                        + " – "
+                        + event["End Date"].strftime("%B %d, %Y")
+                    )
+
+                st.markdown(
+                    f"📅 **{date_text}**"
                 )
 
+            with col2:
 
-                with col1:
-
-                    st.markdown(
-                        f"### 📌 {event['Event']}"
-                    )
-
-                    st.caption(
-                        f"**{event['Organization']}** "
-                        f"• {event['Type']}"
-                    )
-
-                    if event["Location"]:
-
-                        st.write(
-                            f"📍 {event['Location']}"
-                        )
-
-
-                with col2:
-
-                    if (
-                        event["Start Date"]
-                        == event["End Date"]
-                    ):
-
-                        date_text = (
-                            event[
-                                "Start Date"
-                            ].strftime(
-                                "%b %d, %Y"
-                            )
-                        )
-
-                    else:
-
-                        date_text = (
-
-                            event[
-                                "Start Date"
-                            ].strftime(
-                                "%b %d"
-                            )
-
-                            + " – "
-
-                            + event[
-                                "End Date"
-                            ].strftime(
-                                "%b %d, %Y"
-                            )
-
-                        )
-
+                if event["Location"]:
 
                     st.markdown(
-                        f"📅 **{date_text}**"
+                        f"📍 **{event['Location']}**"
                     )
 
+            st.write("")
 
-                    if event["Link"]:
+            # ==================================
+            # VIEW EVENT BUTTON
+            # ==================================
 
-                        st.link_button(
-                            "View Event →",
-                            event["Link"],
-                            use_container_width=True
-                        )
+            if event["Link"]:
 
+                st.link_button(
+                    "View Event →",
+                    event["Link"],
+                    use_container_width=False
+                )
 
-    else:
-
-        st.info(
-            "No upcoming events were found "
-            "from the available event pages."
-        )
-
-
+            st.write("")
     # ==========================================
     # FOOTER
     # ==========================================
