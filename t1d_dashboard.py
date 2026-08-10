@@ -133,7 +133,7 @@ with tab2:
             "News": "https://childrenwithdiabetes.com/news/",
             "Instagram": "https://www.instagram.com/childrenwithdiabetes/",
             "LinkedIn": "https://www.linkedin.com/company/children-with-diabetes/",
-            "X": "https://x.com/CWD4Life"
+            "X": "https://x.com/cwdiabetes"
         },
 
         "T1D Exchange": {
