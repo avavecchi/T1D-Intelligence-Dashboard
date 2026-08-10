@@ -216,52 +216,375 @@ with tab3:
         st.divider()
 
 # DAILY BRIEF TAB
+
 with tab4:
 
     st.header("⭐ Daily T1D Intelligence Brief")
 
-    st.caption("Summary of key advocacy, research, and policy updates")
+    today = pd.Timestamp.today().strftime("%B %d, %Y")
 
-
-    st.subheader("🔥 Top Advocacy Updates")
-
-    st.write("""
-    • Breakthrough T1D updates and advocacy initiatives  
-    • American Diabetes Association announcements  
-    • Patient community and education campaigns
-    """)
-
-
-    st.subheader("🔬 Research Highlights")
-
-    st.write("""
-    • Early-stage T1D screening developments  
-    • Beta-cell preservation research  
-    • Clinical trial updates
-    """)
-
-
-    st.subheader("🏛 Policy & Healthcare Updates")
-
-    st.write("""
-    • Screening guideline discussions  
-    • Healthcare provider education initiatives  
-    • Access and reimbursement updates
-    """)
-
-
-    st.subheader("📅 Upcoming Events")
-
-    st.write("""
-    • ADA Scientific Sessions  
-    • ISPAD Congress  
-    • Diabetes advocacy webinars
-    """)
-
-
-    st.subheader("💡 Key Takeaway")
-
-    st.info(
-        "Today's intelligence highlights opportunities to improve early T1D detection, "
-        "increase stakeholder awareness, and strengthen patient advocacy efforts."
+    st.caption(
+        f"Daily summary of the latest Type 1 Diabetes advocacy, research, "
+        f"policy, and community developments — {today}"
     )
+
+
+    # ==========================================
+    # NEWS SOURCES
+    # ==========================================
+
+    import feedparser
+
+    organizations = {
+
+        "American Diabetes Association":
+            "https://diabetes.org/rss.xml",
+
+        "Breakthrough T1D":
+            "https://www.breakthrought1d.org/feed/",
+
+        "Beyond Type 1":
+            "https://beyondtype1.org/feed/",
+
+        "Children with Diabetes":
+            "https://childrenwithdiabetes.com/feed/",
+
+        "T1D Exchange":
+            "https://t1dexchange.org/feed/"
+    }
+
+
+    # ==========================================
+    # COLLECT NEWS
+    # ==========================================
+
+    all_articles = []
+
+    for organization, feed_url in organizations.items():
+
+        try:
+
+            feed = feedparser.parse(feed_url)
+
+            for article in feed.entries[:5]:
+
+                title = article.get(
+                    "title",
+                    "Untitled"
+                )
+
+                link = article.get(
+                    "link",
+                    ""
+                )
+
+                summary = article.get(
+                    "summary",
+                    ""
+                )
+
+                all_articles.append({
+
+                    "Organization": organization,
+
+                    "Title": title,
+
+                    "Link": link,
+
+                    "Summary": summary
+
+                })
+
+        except Exception:
+
+            continue
+
+
+    # ==========================================
+    # DASHBOARD METRICS
+    # ==========================================
+
+    st.markdown("### 📊 Today's Intelligence")
+
+    col1, col2, col3 = st.columns(3)
+
+    with col1:
+
+        st.metric(
+            "Sources Monitored",
+            len(organizations)
+        )
+
+    with col2:
+
+        st.metric(
+            "Updates Found",
+            len(all_articles)
+        )
+
+    with col3:
+
+        st.metric(
+            "Organizations",
+            len(set(
+                article["Organization"]
+                for article in all_articles
+            ))
+        )
+
+
+    st.divider()
+
+
+    # ==========================================
+    # TOP STORIES
+    # ==========================================
+
+    st.markdown("## 🔥 Top T1D Updates")
+
+    if all_articles:
+
+        # Show the first 8 updates
+        top_articles = all_articles[:8]
+
+        for article in top_articles:
+
+            st.subheader(
+                article["Title"]
+            )
+
+            st.write(
+                f"**Source:** {article['Organization']}"
+            )
+
+            if article["Summary"]:
+
+                summary = article["Summary"]
+
+                # Remove HTML if present
+                import re
+
+                summary = re.sub(
+                    "<.*?>",
+                    "",
+                    summary
+                )
+
+                # Keep it short
+                if len(summary) > 500:
+
+                    summary = summary[:500] + "..."
+
+                st.write(summary)
+
+            st.link_button(
+                "🔗 Read Full Article",
+                article["Link"]
+            )
+
+            st.divider()
+
+    else:
+
+        st.warning(
+            "No current updates were found. "
+            "Try refreshing the page."
+        )
+
+
+    # ==========================================
+    # ADVOCACY
+    # ==========================================
+
+    st.markdown("## 🤝 Advocacy & Patient Community")
+
+    advocacy_keywords = [
+        "advocacy",
+        "patient",
+        "community",
+        "awareness",
+        "support",
+        "fundraising",
+        "access",
+        "policy"
+    ]
+
+    advocacy_articles = [
+
+        article for article in all_articles
+
+        if any(
+            keyword in article["Title"].lower()
+            for keyword in advocacy_keywords
+        )
+    ]
+
+
+    if advocacy_articles:
+
+        for article in advocacy_articles[:5]:
+
+            st.write(
+                f"**{article['Title']}**"
+            )
+
+            st.caption(
+                article["Organization"]
+            )
+
+            st.link_button(
+                "Read Update",
+                article["Link"]
+            )
+
+    else:
+
+        st.info(
+            "No major advocacy-specific updates were identified "
+            "in the current feeds."
+        )
+
+
+    # ==========================================
+    # RESEARCH
+    # ==========================================
+
+    st.markdown("## 🔬 Research & Scientific Developments")
+
+    research_keywords = [
+        "research",
+        "study",
+        "clinical trial",
+        "trial",
+        "therapy",
+        "treatment",
+        "drug",
+        "immunotherapy",
+        "screening",
+        "beta cell",
+        "c-peptide",
+        "teplizumab",
+        "t1d"
+    ]
+
+    research_articles = [
+
+        article for article in all_articles
+
+        if any(
+            keyword in article["Title"].lower()
+            for keyword in research_keywords
+        )
+    ]
+
+
+    if research_articles:
+
+        for article in research_articles[:5]:
+
+            st.write(
+                f"**{article['Title']}**"
+            )
+
+            st.caption(
+                article["Organization"]
+            )
+
+            st.link_button(
+                "🔬 Read Research Update",
+                article["Link"]
+            )
+
+    else:
+
+        st.info(
+            "No research-specific updates were identified "
+            "in the current feeds."
+        )
+
+
+    # ==========================================
+    # POLICY / ACCESS
+    # ==========================================
+
+    st.markdown("## 🏛️ Policy, Access & Healthcare")
+
+    policy_keywords = [
+        "policy",
+        "legislation",
+        "insurance",
+        "coverage",
+        "access",
+        "medicaid",
+        "medicare",
+        "healthcare",
+        "guideline",
+        "advocacy"
+    ]
+
+    policy_articles = [
+
+        article for article in all_articles
+
+        if any(
+            keyword in article["Title"].lower()
+            for keyword in policy_keywords
+        )
+    ]
+
+
+    if policy_articles:
+
+        for article in policy_articles[:5]:
+
+            st.write(
+                f"**{article['Title']}**"
+            )
+
+            st.caption(
+                article["Organization"]
+            )
+
+            st.link_button(
+                "🏛️ Read Update",
+                article["Link"]
+            )
+
+    else:
+
+        st.info(
+            "No major policy or healthcare access updates "
+            "were identified."
+        )
+
+
+    # ==========================================
+    # KEY TAKEAWAY
+    # ==========================================
+
+    st.divider()
+
+    st.markdown("## 💡 Today's Key Takeaway")
+
+    if all_articles:
+
+        organizations_found = list(
+            set(
+                article["Organization"]
+                for article in all_articles
+            )
+        )
+
+        st.info(
+            f"Today's intelligence includes {len(all_articles)} "
+            f"updates across {len(organizations_found)} T1D organizations. "
+            f"Review the research, advocacy, and policy sections above "
+            f"to identify the developments most relevant to T1D patients, "
+            f"caregivers, healthcare professionals, and industry stakeholders."
+        )
+
+    else:
+
+        st.info(
+            "No current intelligence is available today."
+        )
