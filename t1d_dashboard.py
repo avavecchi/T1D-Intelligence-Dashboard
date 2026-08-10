@@ -9,7 +9,7 @@ st.set_page_config(
 
 
 st.title("🩺 Type 1 Diabetes Intelligence Dashboard")
-st.caption("Patient advocacy, research, policy, and social media hub")
+st.caption("A centralized hub for patient advocacy, research, policy, and organizational updates")
 
 
 tab1, tab2, tab3 = st.tabs([
