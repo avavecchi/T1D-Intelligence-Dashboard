@@ -195,7 +195,7 @@ with tab2:
             "Events": "https://www.thediabeteslink.org/events",
             "Instagram": "https://www.instagram.com/thediabeteslink/",
             "X": "https://x.com/thediabeteslink"
-        }
+    }
 
     # ==========================================
     # DISPLAY ORGANIZATIONS
