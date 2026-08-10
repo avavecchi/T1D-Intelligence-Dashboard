@@ -170,7 +170,7 @@ with tab2:
             "Website": "https://beyondtype1.org/",
             "News": "https://beyondtype1.org/resources/?filter=news",
             "Instagram": "https://www.instagram.com/beyondtype1/",
-            "LinkedIn": "https://www.linkedin.com/company/beyond-type-1/",
+            "LinkedIn": "https://www.linkedin.com/company/beyond-type1/",
             "X": "https://x.com/BeyondType1"
         },
 
