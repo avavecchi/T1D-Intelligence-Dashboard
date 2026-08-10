@@ -143,59 +143,60 @@ with tab2:
     st.caption(
         "Explore leading Type 1 Diabetes organizations, news, and social media."
     )
+# ==========================================
+# VERIFIED ORGANIZATION LINKS
+# ==========================================
 
-    # ==========================================
-    # VERIFIED ORGANIZATION LINKS
-    # ==========================================
+verified_links = {
 
-    verified_links = {
+    "American Diabetes Association": {
+        "Website": "https://diabetes.org/",
+        "News": "https://diabetes.org/newsroom",
+        "Instagram": "https://www.instagram.com/amdiabetesassn/",
+        "LinkedIn": "https://www.linkedin.com/company/american-diabetes-association/",
+        "X": "https://x.com/AmDiabetesAssn"
+    },
 
-        "American Diabetes Association": {
-            "Website": "https://diabetes.org/",
-            "News": "https://diabetes.org/newsroom",
-            "Instagram": "https://www.instagram.com/amdiabetesassn/",
-            "LinkedIn": "https://www.linkedin.com/company/american-diabetes-association/",
-            "X": "https://x.com/AmDiabetesAssn"
-        },
+    "Breakthrough T1D": {
+        "Website": "https://www.breakthrought1d.org/",
+        "News": "https://www.breakthrought1d.org/news/",
+        "Instagram": "https://www.instagram.com/breakthrought1d/",
+        "LinkedIn": "https://www.linkedin.com/company/breakthrought1d/",
+        "X": "https://x.com/BreakthroughT1D"
+    },
 
-        "Breakthrough T1D": {
-            "Website": "https://www.breakthrought1d.org/",
-            "News": "https://www.breakthrought1d.org/news/",
-            "Instagram": "https://www.instagram.com/breakthrought1d/",
-            "LinkedIn": "https://www.linkedin.com/company/breakthrought1d/",
-            "X": "https://x.com/BreakthroughT1D"
-        },
+    "Beyond Type 1": {
+        "Website": "https://beyondtype1.org/",
+        "News": "https://beyondtype1.org/resources/?filter=news",
+        "Instagram": "https://www.instagram.com/beyondtype1/",
+        "LinkedIn": "https://www.linkedin.com/company/beyond-type1/",
+        "X": "https://x.com/BeyondType1"
+    },
 
-        "Beyond Type 1": {
-            "Website": "https://beyondtype1.org/",
-            "News": "https://beyondtype1.org/resources/?filter=news",
-            "Instagram": "https://www.instagram.com/beyondtype1/",
-            "LinkedIn": "https://www.linkedin.com/company/beyond-type1/",
-            "X": "https://x.com/BeyondType1"
-        },
+    "Children with Diabetes": {
+        "Website": "https://childrenwithdiabetes.com/",
+        "News": "https://childrenwithdiabetes.com/news/",
+        "Instagram": "https://www.instagram.com/childrenwithdiabetes/",
+        "LinkedIn": "https://www.linkedin.com/company/children-with-diabetes/",
+        "X": "https://x.com/cwdiabetes"
+    },
 
-        "Children with Diabetes": {
-            "Website": "https://childrenwithdiabetes.com/",
-            "News": "https://childrenwithdiabetes.com/news/",
-            "Instagram": "https://www.instagram.com/childrenwithdiabetes/",
-            "LinkedIn": "https://www.linkedin.com/company/children-with-diabetes/",
-            "X": "https://x.com/cwdiabetes"
-        },
+    "T1D Exchange": {
+        "Website": "https://t1dexchange.org/",
+        "News": "https://t1dexchange.org/articles/",
+        "Instagram": "https://www.instagram.com/t1dexchange/",
+        "LinkedIn": "https://www.linkedin.com/company/t1d-exchange/",
+        "X": "https://x.com/T1DExchange"
+    },
 
-        "T1D Exchange": {
-            "Website": "https://t1dexchange.org/",
-            "News": "https://t1dexchange.org/articles/",
-            "Instagram": "https://www.instagram.com/t1dexchange/",
-            "LinkedIn": "https://www.linkedin.com/company/t1d-exchange/",
-            "X": "https://x.com/T1DExchange"
-        },
-        
-        "The Diabetes Link": {
-            "Website": "https://www.thediabeteslink.org/",
-            "Events": "https://www.thediabeteslink.org/events",
-            "Instagram": "https://www.instagram.com/thediabeteslink/",
-            "X": "https://x.com/thediabeteslink"
+    "The Diabetes Link": {
+        "Website": "https://www.thediabeteslink.org/",
+        "Events": "https://www.thediabeteslink.org/events",
+        "Instagram": "https://www.instagram.com/thediabeteslink/",
+        "X": "https://x.com/thediabeteslink"
     }
+
+}
 
     # ==========================================
     # DISPLAY ORGANIZATIONS
