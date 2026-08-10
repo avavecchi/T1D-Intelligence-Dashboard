@@ -87,12 +87,7 @@ with tab1:
             )
 
 
-# ==========================================
-
 # PAG DIRECTORY TAB
-
-# ==========================================
-
 with tab2:
 
     st.header("🤝 T1D Patient Advocacy Organization Hub")
