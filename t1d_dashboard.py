@@ -203,7 +203,7 @@ with tab3:
             "Timing": "Ongoing",
             "Focus": "T1D screening, prevention, clinical trials, and disease progression",
             "Organization": "TrialNet",
-            "Link": "https://www.trialnet.org/events"
+            "Link": "https://trialnet.org/news-events/events"
         },
 
         {
