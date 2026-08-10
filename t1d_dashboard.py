@@ -87,20 +87,19 @@ with tab1:
                 "Unable to load updates."
             )
 
-```python
+
 # ==========================================
+
 # PAG DIRECTORY TAB
+
 # ==========================================
 
 with tab2:
 
     st.header("🤝 T1D Patient Advocacy Organization Hub")
-
     st.caption(
-        "Explore leading Type 1 Diabetes organizations, "
-        "news, events, and social media."
+        "Explore leading Type 1 Diabetes organizations, news, and social media."
     )
-
 
     # ==========================================
     # VERIFIED ORGANIZATION LINKS
@@ -111,7 +110,6 @@ with tab2:
         "American Diabetes Association": {
             "Website": "https://diabetes.org/",
             "News": "https://diabetes.org/newsroom",
-            "Events": "https://diabetes.org/events",
             "Instagram": "https://www.instagram.com/amdiabetesassn/",
             "LinkedIn": "https://www.linkedin.com/company/american-diabetes-association/",
             "X": "https://x.com/AmDiabetesAssn"
@@ -120,7 +118,6 @@ with tab2:
         "Breakthrough T1D": {
             "Website": "https://www.breakthrought1d.org/",
             "News": "https://www.breakthrought1d.org/news/",
-            "Events": "https://www.breakthrought1d.org/events/",
             "Instagram": "https://www.instagram.com/breakthrought1d/",
             "LinkedIn": "https://www.linkedin.com/company/breakthrought1d/",
             "X": "https://x.com/BreakthroughT1D"
@@ -129,7 +126,6 @@ with tab2:
         "Beyond Type 1": {
             "Website": "https://beyondtype1.org/",
             "News": "https://beyondtype1.org/resources/?filter=news",
-            "Events": "https://beyondtype1.org/events/",
             "Instagram": "https://www.instagram.com/beyondtype1/",
             "LinkedIn": "https://www.linkedin.com/company/beyond-type-1/",
             "X": "https://x.com/BeyondType1"
@@ -138,7 +134,6 @@ with tab2:
         "Children with Diabetes": {
             "Website": "https://childrenwithdiabetes.com/",
             "News": "https://childrenwithdiabetes.com/news/",
-            "Events": "https://childrenwithdiabetes.com/events/",
             "Instagram": "https://www.instagram.com/childrenwithdiabetes/",
             "LinkedIn": "https://www.linkedin.com/company/children-with-diabetes/",
             "X": "https://x.com/cwdiabetes"
@@ -147,96 +142,35 @@ with tab2:
         "T1D Exchange": {
             "Website": "https://t1dexchange.org/",
             "News": "https://t1dexchange.org/articles/",
-            "Events": "https://t1dexchange.org/events/",
             "Instagram": "https://www.instagram.com/t1dexchange/",
             "LinkedIn": "https://www.linkedin.com/company/t1d-exchange/",
             "X": "https://x.com/T1DExchange"
-        },
-
-        "The Diabetes Link": {
-            "Website": "https://www.thediabeteslink.org/",
-            "Events": "https://www.thediabeteslink.org/events",
-            "Instagram": "https://www.instagram.com/thediabeteslink/",
-            "X": "https://x.com/thediabeteslink"
         }
+
     }
-
-
-    # ==========================================
-    # LOAD PAG DATABASE
-    # ==========================================
-
-    pag_data = pd.read_csv("PAG_database.csv")
-
-
-    # ==========================================
-    # REMOVE DIABETES LEADERSHIP COUNCIL
-    # ==========================================
-
-    pag_data = pag_data[
-        pag_data["Organization"] != "Diabetes Leadership Council"
-    ]
-
 
     # ==========================================
     # DISPLAY ORGANIZATIONS
     # ==========================================
 
+    pag_data = pd.read_csv("PAG_database.csv")
+
     for index, row in pag_data.iterrows():
 
         organization = row["Organization"]
 
-
         # Use verified links when available.
-        # Fall back to CSV for organizations
-        # that are not listed above.
-
+        # Fall back to the CSV for organizations not listed above.
         links = verified_links.get(
             organization,
             {
-                "Website": (
-                    row["Website"]
-                    if pd.notna(row["Website"])
-                    else None
-                ),
-
-                "News": (
-                    row["News"]
-                    if pd.notna(row["News"])
-                    else None
-                ),
-
-                "Events": (
-                    row["Events"]
-                    if "Events" in row
-                    and pd.notna(row["Events"])
-                    else None
-                ),
-
-                "Instagram": (
-                    row["Instagram"]
-                    if pd.notna(row["Instagram"])
-                    else None
-                ),
-
-                "LinkedIn": (
-                    row["LinkedIn"]
-                    if pd.notna(row["LinkedIn"])
-                    else None
-                ),
-
-                "X": (
-                    row["X"]
-                    if pd.notna(row["X"])
-                    else None
-                )
+                "Website": row["Website"] if pd.notna(row["Website"]) else None,
+                "News": row["News"] if pd.notna(row["News"]) else None,
+                "Instagram": row["Instagram"] if pd.notna(row["Instagram"]) else None,
+                "LinkedIn": row["LinkedIn"] if pd.notna(row["LinkedIn"]) else None,
+                "X": row["X"] if pd.notna(row["X"]) else None
             }
         )
-
-
-        # ==========================================
-        # ORGANIZATION CARD
-        # ==========================================
 
         with st.expander(
             f" {organization}",
@@ -249,91 +183,50 @@ with tab2:
 
             st.write("")
 
-
             # ==========================================
             # LINK BUTTONS
             # ==========================================
 
             col1, col2 = st.columns(2)
 
-
-            # ------------------------------------------
-            # LEFT COLUMN
-            # ------------------------------------------
-
             with col1:
 
-                # Website
-                if links.get("Website"):
-
+                if links["Website"]:
                     st.link_button(
                         "🌐 Website",
                         links["Website"],
                         use_container_width=True
                     )
 
-
-                # News
-                # The Diabetes Link does NOT have a News button.
-                if organization != "The Diabetes Link":
-
-                    if links.get("News"):
-
-                        st.link_button(
-                            "📰 News",
-                            links["News"],
-                            use_container_width=True
-                        )
-
-
-                # Events
-                if links.get("Events"):
-
+                if links["News"]:
                     st.link_button(
-                        "📅 Events",
-                        links["Events"],
+                        "📰 News",
+                        links["News"],
                         use_container_width=True
                     )
 
-
-                # Instagram
-                if links.get("Instagram"):
-
+                if links["Instagram"]:
                     st.link_button(
                         "📸 Instagram",
                         links["Instagram"],
                         use_container_width=True
                     )
 
-
-            # ------------------------------------------
-            # RIGHT COLUMN
-            # ------------------------------------------
-
             with col2:
 
-                # LinkedIn
-                # The Diabetes Link does NOT have LinkedIn.
-                if organization != "The Diabetes Link":
+                if links["LinkedIn"]:
+                    st.link_button(
+                        "💼 LinkedIn",
+                        links["LinkedIn"],
+                        use_container_width=True
+                    )
 
-                    if links.get("LinkedIn"):
-
-                        st.link_button(
-                            "💼 LinkedIn",
-                            links["LinkedIn"],
-                            use_container_width=True
-                        )
-
-
-                # X
-                if links.get("X"):
-
+                if links["X"]:
                     st.link_button(
                         "🐦 X",
                         links["X"],
                         use_container_width=True
                     )
-
 
             st.write("")
 
