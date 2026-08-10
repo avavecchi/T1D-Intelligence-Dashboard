@@ -117,7 +117,7 @@ with tab2:
             "Website": "https://www.breakthrought1d.org/",
             "News": "https://www.breakthrought1d.org/news/",
             "Instagram": "https://www.instagram.com/breakthrought1d/",
-            "LinkedIn": "https://www.linkedin.com/company/breakthrought1d/",
+            "LinkedIn": "https://www.linkedin.com/company/breakthrought1d/posts/?feedView=all",
             "X": "https://x.com/BreakthroughT1D"
         },
 
