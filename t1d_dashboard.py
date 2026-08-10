@@ -188,9 +188,14 @@ with tab2:
             "Instagram": "https://www.instagram.com/t1dexchange/",
             "LinkedIn": "https://www.linkedin.com/company/t1d-exchange/",
             "X": "https://x.com/T1DExchange"
+        },
+        
+        "The Diabetes Link": {
+            "Website": "https://www.thediabeteslink.org/",
+            "Events": "https://www.thediabeteslink.org/events",
+            "Instagram": "https://www.instagram.com/thediabeteslink/",
+            "X": "https://x.com/thediabeteslink"
         }
-
-    }
 
     # ==========================================
     # DISPLAY ORGANIZATIONS
