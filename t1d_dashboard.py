@@ -122,7 +122,7 @@ with tab2:
 
         "Beyond Type 1": {
             "Website": "https://beyondtype1.org/",
-            "News": "https://beyondtype1.org/news/",
+            "News": "https://beyondtype1.org/resources/#12",
             "Instagram": "https://www.instagram.com/beyondtype1/",
             "LinkedIn": "https://www.linkedin.com/company/beyond-type-1/",
             "X": "https://x.com/BeyondType1"
