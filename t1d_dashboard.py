@@ -19,73 +19,122 @@ tab1, tab2, tab3 = st.tabs([
 ])
 
 
+# ==========================================
 # NEWS TAB
+# ==========================================
+
 with tab1:
 
     st.header("📰 T1D Advocacy News")
 
-    st.caption("Latest updates directly from Type 1 Diabetes organizations")
-
+    st.caption(
+        "Latest updates from leading Type 1 Diabetes organizations"
+    )
 
     import feedparser
 
 
-    organizations = {
-        "American Diabetes Association": 
-            "https://diabetes.org/rss.xml",
+    # ==========================================
+    # NEWS SOURCES
+    # ==========================================
 
-        "Breakthrough T1D":
-            "https://www.breakthrought1d.org/feed/",
+    news_sources = {
 
-        "Beyond Type 1":
-            "https://beyondtype1.org/feed/",
+        "American Diabetes Association": {
+            "RSS": "https://diabetes.org/rss.xml",
+            "News": "https://diabetes.org/newsroom"
+        },
 
-        "Children with Diabetes":
-            "https://childrenwithdiabetes.com/feed/",
+        "Breakthrough T1D": {
+            "RSS": "https://www.breakthrought1d.org/feed/",
+            "News": "https://www.breakthrought1d.org/news/"
+        },
 
-        "T1D Exchange":
-            "https://t1dexchange.org/feed/"
+        "Beyond Type 1": {
+            "RSS": "https://beyondtype1.org/feed/",
+            "News": "https://beyondtype1.org/resources/?filter=news"
+        },
+
+        "Children with Diabetes": {
+            "RSS": "https://childrenwithdiabetes.com/feed/",
+            "News": "https://childrenwithdiabetes.com/news/"
+        },
+
+        "T1D Exchange": {
+            "RSS": "https://t1dexchange.org/feed/",
+            "News": "https://t1dexchange.org/articles/"
+        }
     }
 
 
-    for org, feed_url in organizations.items():
+    # ==========================================
+    # DISPLAY NEWS
+    # ==========================================
 
-        st.subheader(org)
+    for organization, source in news_sources.items():
 
         try:
 
-            feed = feedparser.parse(feed_url)
+            feed = feedparser.parse(
+                source["RSS"]
+            )
 
             articles = feed.entries[:3]
 
 
+            # Only display the organization
+            # if the RSS feed actually returns articles.
+
             if articles:
+
+                st.subheader(
+                    organization
+                )
 
                 for article in articles:
 
-                    st.markdown(
-                        f"**{article.title}**"
+                    title = article.get(
+                        "title",
+                        "Untitled Article"
+                    )
+
+                    link = article.get(
+                        "link",
+                        ""
                     )
 
                     st.markdown(
-                        f"[🔗 Read article]({article.link})"
+                        f"**{title}**"
                     )
+
+                    if link:
+
+                        st.link_button(
+                            "🔗 Read Article",
+                            link
+                        )
 
                     st.divider()
 
-            else:
 
-                st.write(
-                    "No recent updates available."
-                )
+        except Exception:
+
+            # If the RSS feed fails,
+            # don't display an error on the dashboard.
+
+            continue
 
 
-        except:
+        # ==========================================
+        # NEWS PAGE BUTTON
+        # ==========================================
 
-            st.write(
-                "Unable to load updates."
-            )
+        st.link_button(
+            f"View All {organization} News →",
+            source["News"]
+        )
 
+        st.divider()
 
 # PAG DIRECTORY TAB
 with tab2:
