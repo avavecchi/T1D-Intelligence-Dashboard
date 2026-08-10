@@ -1,13 +1,4 @@
-import feedparser
-import pandas as pd
-from datetime import datetime
-
-CSV_FILE = "T1D_Intelligence.csv"
-
-
-# ==========================================
 # SOURCES
-# ==========================================
 
 sources = {
 
