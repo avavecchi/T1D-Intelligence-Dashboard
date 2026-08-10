@@ -190,7 +190,6 @@ for index, row in pag_data.iterrows():
 
             st.write("")
 
-```python
 # ==========================================
 # LINK BUTTONS
 # ==========================================
