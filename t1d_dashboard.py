@@ -314,106 +314,64 @@ with tab2:
 
 with tab3:
 
+    import requests
+    import re
+    from bs4 import BeautifulSoup
+    from datetime import datetime
+    from dateutil import parser as date_parser
+
     st.header("📅 T1D Events & Opportunities")
 
     st.caption(
-        "Track upcoming conferences, webinars, research meetings, "
-        "and advocacy opportunities across the Type 1 Diabetes community."
+        "Live event calendar aggregating events from leading Type 1 Diabetes "
+        "organizations and research networks."
     )
 
-
     # ==========================================
-    # EVENT DATA
+    # EVENT SOURCE WEBSITES
     # ==========================================
 
-    events = [
+    EVENT_SOURCES = {
 
-        {
-            "Event": "ADA Scientific Sessions",
-            "Type": "Scientific Conference",
-            "Icon": "🔬",
-            "Start Date": "2027-06-05",
-            "End Date": "2027-06-08",
-            "Focus": "Diabetes research, clinical care, technology, and innovation",
-            "Organization": "American Diabetes Association",
-            "Link": "https://professional.diabetes.org/scientific-sessions"
+        "American Diabetes Association": {
+            "url": "https://diabetes.org/events/calendar-events",
+            "type": "ADA"
         },
 
-        {
-            "Event": "ADA Professional Webinars",
-            "Type": "Webinar",
-            "Icon": "💻",
-            "Start Date": "2026-08-20",
-            "End Date": "2026-08-20",
-            "Focus": "Clinical updates, diabetes management, guidelines, and education",
-            "Organization": "American Diabetes Association",
-            "Link": "https://professional.diabetes.org/professional-development/upcoming-professional-webinars"
+        "Breakthrough T1D": {
+            "url": "https://www.breakthrought1d.org/discover-events/",
+            "type": "BREAKTHROUGH"
         },
 
-        {
-            "Event": "Breakthrough T1D Events",
-            "Type": "Advocacy & Community",
-            "Icon": "🤝",
-            "Start Date": "2026-09-01",
-            "End Date": "2026-09-01",
-            "Focus": "T1D research, advocacy, fundraising, and community engagement",
-            "Organization": "Breakthrough T1D",
-            "Link": "https://www.breakthrought1d.org/events/"
+        "Children with Diabetes": {
+            "url": "https://childrenwithdiabetes.com/events/",
+            "type": "CWD"
         },
 
-        {
-            "Event": "TrialNet Events",
-            "Type": "Research",
-            "Icon": "🧬",
-            "Start Date": "2026-09-15",
-            "End Date": "2026-09-15",
-            "Focus": "T1D screening, prevention, clinical trials, and disease progression",
-            "Organization": "TrialNet",
-            "Link": "https://trialnet.org/news-events/events"
+        "TrialNet": {
+            "url": "https://www.trialnet.org/news-events/events",
+            "type": "TRIALNET"
         },
 
-        {
-            "Event": "ISPAD Congress",
-            "Type": "Scientific Conference",
-            "Icon": "🌎",
-            "Start Date": "2026-10-01",
-            "End Date": "2026-10-04",
-            "Focus": "Pediatric diabetes research, treatment, technology, and care",
-            "Organization": "ISPAD",
-            "Link": "https://www.ispad.org/"
+        "T1D Exchange": {
+            "url": "https://t1dexchange.org/learning-sessions",
+            "type": "T1DX"
         },
 
-        {
-            "Event": "Children with Diabetes Friends for Life",
-            "Type": "Patient & Family Conference",
-            "Icon": "💙",
-            "Start Date": "2026-07-14",
-            "End Date": "2026-07-18",
-            "Focus": "Education, peer support, technology, and family engagement",
-            "Organization": "Children with Diabetes",
-            "Link": "https://childrenwithdiabetes.com/events/"
+        "The Diabetes Link": {
+            "url": "https://www.thediabeteslink.org/events",
+            "type": "DIABETES_LINK"
+        },
+
+        "Beyond Type 1": {
+            "url": "https://beyondtype1.org/",
+            "type": "BEYOND"
         }
-
-    ]
-
-
-    # ==========================================
-    # CONVERT DATES
-    # ==========================================
-
-    for event in events:
-
-        event["Start Date"] = pd.to_datetime(
-            event["Start Date"]
-        )
-
-        event["End Date"] = pd.to_datetime(
-            event["End Date"]
-        )
+    }
 
 
     # ==========================================
-    # MONTH NAVIGATION
+    # SESSION STATE
     # ==========================================
 
     if "calendar_month" not in st.session_state:
@@ -422,6 +380,962 @@ with tab3:
             day=1
         )
 
+
+    # ==========================================
+    # EVENT STORAGE
+    # ==========================================
+
+    all_events = []
+
+
+    # ==========================================
+    # HELPER: ADD EVENT
+    # ==========================================
+
+    def add_event(
+        organization,
+        title,
+        start_date,
+        end_date=None,
+        event_type="Event",
+        link="",
+        location=""
+    ):
+
+        try:
+
+            start_date = pd.to_datetime(
+                start_date,
+                errors="coerce"
+            )
+
+            if pd.isna(start_date):
+                return
+
+            if end_date:
+
+                end_date = pd.to_datetime(
+                    end_date,
+                    errors="coerce"
+                )
+
+            else:
+
+                end_date = start_date
+
+
+            if pd.isna(end_date):
+
+                end_date = start_date
+
+
+            all_events.append({
+
+                "Organization": organization,
+
+                "Event": title,
+
+                "Start Date": start_date,
+
+                "End Date": end_date,
+
+                "Type": event_type,
+
+                "Location": location,
+
+                "Link": link
+
+            })
+
+        except Exception:
+
+            pass
+
+
+    # ==========================================
+    # HTTP REQUEST HELPER
+    # ==========================================
+
+    def get_page(url):
+
+        try:
+
+            headers = {
+
+                "User-Agent":
+                "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) "
+                "AppleWebKit/537.36 Chrome/126 Safari/537.36"
+
+            }
+
+            response = requests.get(
+                url,
+                headers=headers,
+                timeout=20
+            )
+
+            if response.status_code == 200:
+
+                return response.text
+
+        except Exception:
+
+            pass
+
+
+        return ""
+
+
+    # ==========================================
+    # BREAKTHROUGH T1D
+    # ==========================================
+
+    def scrape_breakthrough():
+
+        base_url = (
+            "https://www.breakthrought1d.org/"
+            "discover-events/"
+        )
+
+        # Breakthrough T1D uses paginated event pages.
+        # We collect multiple pages so the calendar isn't limited
+        # to the first 10 events.
+
+        for page_number in range(1, 95):
+
+            if page_number == 1:
+
+                url = base_url
+
+            else:
+
+                url = (
+                    base_url
+                    + f"page/{page_number}/"
+                )
+
+
+            html = get_page(url)
+
+            if not html:
+                break
+
+
+            soup = BeautifulSoup(
+                html,
+                "html.parser"
+            )
+
+
+            text = soup.get_text(
+                "\n",
+                strip=True
+            )
+
+
+            # Find date + event blocks using page text.
+            date_pattern = re.compile(
+                r"""
+                (
+                    January|February|March|April|May|June|
+                    July|August|September|October|November|December
+                )
+                \s+
+                (\d{1,2}),
+                \s+
+                (\d{4})
+                """,
+                re.VERBOSE
+            )
+
+
+            matches = list(
+                date_pattern.finditer(text)
+            )
+
+
+            if not matches:
+                continue
+
+
+            for i, match in enumerate(matches):
+
+                try:
+
+                    date_string = match.group(0)
+
+                    start_date = pd.to_datetime(
+                        date_string
+                    )
+
+
+                    start_position = match.end()
+
+
+                    if i + 1 < len(matches):
+
+                        end_position = matches[
+                            i + 1
+                        ].start()
+
+                    else:
+
+                        end_position = (
+                            start_position + 600
+                        )
+
+
+                    block = text[
+                        start_position:end_position
+                    ]
+
+
+                    lines = [
+                        line.strip()
+                        for line in block.split("\n")
+                        if line.strip()
+                    ]
+
+
+                    if not lines:
+                        continue
+
+
+                    title = lines[0]
+
+
+                    # Skip obvious navigation text
+
+                    bad_titles = [
+
+                        "Search",
+                        "Search by event name, chapter",
+                        "Location",
+                        "Date range",
+                        "Event type",
+                        "Apply Filters",
+                        "Clear Filters"
+
+                    ]
+
+
+                    if title in bad_titles:
+                        continue
+
+
+                    event_type = "Breakthrough T1D Event"
+
+
+                    for possible_type in [
+                        "Community",
+                        "Walk",
+                        "T1D Support",
+                        "Research",
+                        "Gala",
+                        "Run / Endurance",
+                        "Other Special Event"
+                    ]:
+
+                        if possible_type in block:
+
+                            event_type = possible_type
+                            break
+
+
+                    add_event(
+
+                        organization="Breakthrough T1D",
+
+                        title=title,
+
+                        start_date=start_date,
+
+                        event_type=event_type,
+
+                        link=base_url
+
+                    )
+
+
+                except Exception:
+
+                    continue
+
+
+    # ==========================================
+    # ADA
+    # ==========================================
+
+    def scrape_ada():
+
+        url = (
+            "https://diabetes.org/events/calendar-events"
+        )
+
+        html = get_page(url)
+
+        if not html:
+            return
+
+
+        soup = BeautifulSoup(
+            html,
+            "html.parser"
+        )
+
+
+        # Search all links on the page
+
+        for link_tag in soup.find_all("a"):
+
+            title = link_tag.get_text(
+                " ",
+                strip=True
+            )
+
+            href = link_tag.get(
+                "href",
+                ""
+            )
+
+
+            if not title:
+                continue
+
+
+            # Look around the link for a date
+
+            parent_text = (
+                link_tag.parent.get_text(
+                    " ",
+                    strip=True
+                )
+                if link_tag.parent
+                else ""
+            )
+
+
+            date_matches = re.findall(
+
+                r"""
+                (
+                    January|February|March|April|May|June|
+                    July|August|September|October|November|December
+                )
+                \s+
+                \d{1,2},
+                \s+
+                \d{4}
+                )
+
+                """,
+
+                parent_text,
+                re.VERBOSE
+            )
+
+
+            if date_matches:
+
+                try:
+
+                    event_date = pd.to_datetime(
+                        date_matches[0]
+                    )
+
+                    if href.startswith("/"):
+
+                        href = (
+                            "https://diabetes.org"
+                            + href
+                        )
+
+
+                    add_event(
+
+                        organization=
+                        "American Diabetes Association",
+
+                        title=title,
+
+                        start_date=event_date,
+
+                        event_type="ADA Event",
+
+                        link=href
+
+                    )
+
+                except Exception:
+
+                    continue
+
+
+    # ==========================================
+    # CHILDREN WITH DIABETES
+    # ==========================================
+
+    def scrape_cwd():
+
+        url = (
+            "https://childrenwithdiabetes.com/events/"
+        )
+
+        html = get_page(url)
+
+        if not html:
+            return
+
+
+        soup = BeautifulSoup(
+            html,
+            "html.parser"
+        )
+
+
+        text = soup.get_text(
+            "\n",
+            strip=True
+        )
+
+
+        # CWD frequently publishes conference dates
+        # directly in page content.
+
+        date_pattern = re.compile(
+
+            r"""
+            (
+                January|February|March|April|May|June|
+                July|August|September|October|November|December
+            )
+            \s+
+            \d{1,2}
+            (?:[-–]\d{1,2})?
+            ,
+            \s*
+            (\d{4})
+            """,
+
+            re.VERBOSE
+
+        )
+
+
+        for match in date_pattern.finditer(text):
+
+            try:
+
+                date_string = match.group(0)
+
+                start_date = pd.to_datetime(
+                    re.sub(
+                        r"[-–]\d{1,2}",
+                        "",
+                        date_string
+                    )
+                )
+
+
+                beginning = max(
+                    0,
+                    match.start() - 250
+                )
+
+
+                surrounding_text = text[
+                    beginning:match.start()
+                ]
+
+
+                lines = [
+                    line.strip()
+                    for line in surrounding_text.split("\n")
+                    if line.strip()
+                ]
+
+
+                if not lines:
+                    continue
+
+
+                title = lines[-1]
+
+
+                add_event(
+
+                    organization=
+                    "Children with Diabetes",
+
+                    title=title,
+
+                    start_date=start_date,
+
+                    event_type=
+                    "Patient & Family Event",
+
+                    link=url
+
+                )
+
+            except Exception:
+
+                continue
+
+
+    # ==========================================
+    # TRIALNET
+    # ==========================================
+
+    def scrape_trialnet():
+
+        url = (
+            "https://www.trialnet.org/"
+            "news-events/events"
+        )
+
+        html = get_page(url)
+
+        if not html:
+            return
+
+
+        soup = BeautifulSoup(
+            html,
+            "html.parser"
+        )
+
+
+        text = soup.get_text(
+            "\n",
+            strip=True
+        )
+
+
+        # TrialNet displays events with month/day
+        # and event descriptions.
+
+        date_pattern = re.compile(
+
+            r"""
+            (
+                JANUARY|FEBRUARY|MARCH|APRIL|MAY|JUNE|
+                JULY|AUGUST|SEPTEMBER|OCTOBER|NOVEMBER|DECEMBER
+            )
+            \s+
+            (\d{1,2})
+            """,
+
+            re.IGNORECASE |
+            re.VERBOSE
+
+        )
+
+
+        current_year = datetime.now().year
+
+
+        for match in date_pattern.finditer(text):
+
+            try:
+
+                month = match.group(1)
+
+                day = match.group(2)
+
+
+                event_date = pd.to_datetime(
+
+                    f"{month} {day} {current_year}",
+
+                    errors="coerce"
+
+                )
+
+
+                if pd.isna(event_date):
+                    continue
+
+
+                beginning = match.end()
+
+
+                block = text[
+                    beginning:
+                    beginning + 250
+                ]
+
+
+                lines = [
+                    line.strip()
+                    for line in block.split("\n")
+                    if line.strip()
+                ]
+
+
+                if not lines:
+                    continue
+
+
+                title = lines[0]
+
+
+                add_event(
+
+                    organization="TrialNet",
+
+                    title=title,
+
+                    start_date=event_date,
+
+                    event_type="Research / Screening",
+
+                    link=url
+
+                )
+
+
+            except Exception:
+
+                continue
+
+
+    # ==========================================
+    # T1D EXCHANGE
+    # ==========================================
+
+    def scrape_t1dx():
+
+        url = (
+            "https://t1dexchange.org/learning-sessions"
+        )
+
+        html = get_page(url)
+
+        if not html:
+            return
+
+
+        soup = BeautifulSoup(
+            html,
+            "html.parser"
+        )
+
+
+        text = soup.get_text(
+            "\n",
+            strip=True
+        )
+
+
+        date_pattern = re.compile(
+
+            r"""
+            (
+                January|February|March|April|May|June|
+                July|August|September|October|November|December
+            )
+            \s+
+            \d{1,2}
+            (?:[-–]\d{1,2})?
+            ,
+            \s*
+            (\d{4})
+            """,
+
+            re.VERBOSE
+
+        )
+
+
+        for match in date_pattern.finditer(text):
+
+            try:
+
+                date_string = match.group(0)
+
+                start_date = pd.to_datetime(
+                    re.sub(
+                        r"[-–]\d{1,2}",
+                        "",
+                        date_string
+                    )
+                )
+
+
+                beginning = max(
+                    0,
+                    match.start() - 200
+                )
+
+
+                surrounding = text[
+                    beginning:match.start()
+                ]
+
+
+                lines = [
+                    x.strip()
+                    for x in surrounding.split("\n")
+                    if x.strip()
+                ]
+
+
+                if not lines:
+                    continue
+
+
+                title = lines[-1]
+
+
+                add_event(
+
+                    organization="T1D Exchange",
+
+                    title=title,
+
+                    start_date=start_date,
+
+                    event_type=
+                    "Research / Professional",
+
+                    link=url
+
+                )
+
+
+            except Exception:
+
+                continue
+
+
+    # ==========================================
+    # THE DIABETES LINK
+    # ==========================================
+
+    def scrape_diabetes_link():
+
+        url = (
+            "https://www.thediabeteslink.org/events"
+        )
+
+        html = get_page(url)
+
+        if not html:
+            return
+
+
+        soup = BeautifulSoup(
+            html,
+            "html.parser"
+        )
+
+
+        # The Diabetes Link events page is the
+        # authoritative source. We scan the page
+        # for visible dates and nearby event names.
+
+        text = soup.get_text(
+            "\n",
+            strip=True
+        )
+
+
+        date_pattern = re.compile(
+
+            r"""
+            (
+                January|February|March|April|May|June|
+                July|August|September|October|November|December
+            )
+            \s+
+            \d{1,2}
+            (?:,\s*\d{4})?
+            """,
+
+            re.VERBOSE
+
+        )
+
+
+        for match in date_pattern.finditer(text):
+
+            try:
+
+                date_string = match.group(0)
+
+
+                if "," not in date_string:
+
+                    date_string += (
+                        f", {datetime.now().year}"
+                    )
+
+
+                event_date = pd.to_datetime(
+                    date_string,
+                    errors="coerce"
+                )
+
+
+                if pd.isna(event_date):
+                    continue
+
+
+                beginning = max(
+                    0,
+                    match.start() - 200
+                )
+
+
+                surrounding = text[
+                    beginning:match.start()
+                ]
+
+
+                lines = [
+                    x.strip()
+                    for x in surrounding.split("\n")
+                    if x.strip()
+                ]
+
+
+                if not lines:
+                    continue
+
+
+                title = lines[-1]
+
+
+                add_event(
+
+                    organization=
+                    "The Diabetes Link",
+
+                    title=title,
+
+                    start_date=event_date,
+
+                    event_type=
+                    "Community / Advocacy",
+
+                    link=url
+
+                )
+
+
+            except Exception:
+
+                continue
+
+
+    # ==========================================
+    # RUN SCRAPERS
+    # ==========================================
+
+    with st.spinner(
+        "🔄 Updating events from organization calendars..."
+    ):
+
+        scrape_ada()
+
+        scrape_breakthrough()
+
+        scrape_cwd()
+
+        scrape_trialnet()
+
+        scrape_t1dx()
+
+        scrape_diabetes_link()
+
+
+    # ==========================================
+    # REMOVE DUPLICATES
+    # ==========================================
+
+    if all_events:
+
+        events_df = pd.DataFrame(
+            all_events
+        )
+
+
+        events_df = events_df.drop_duplicates(
+            subset=[
+                "Organization",
+                "Event",
+                "Start Date"
+            ]
+        )
+
+
+        events = events_df.to_dict(
+            "records"
+        )
+
+    else:
+
+        events = []
+
+
+    # ==========================================
+    # EVENT SOURCE STATUS
+    # ==========================================
+
+    st.markdown(
+        "### 📡 Live Event Sources"
+    )
+
+
+    status_cols = st.columns(
+        6
+    )
+
+
+    source_names = [
+
+        "ADA",
+
+        "Breakthrough T1D",
+
+        "Children with Diabetes",
+
+        "TrialNet",
+
+        "T1D Exchange",
+
+        "The Diabetes Link"
+
+    ]
+
+
+    for i, source_name in enumerate(
+        source_names
+    ):
+
+        with status_cols[
+            i
+        ]:
+
+            st.metric(
+                source_name,
+                len([
+                    e for e in events
+                    if (
+                        source_name
+                        in e["Organization"]
+                    )
+                ])
+            )
+
+
+    st.divider()
+
+
+    # ==========================================
+    # MONTH NAVIGATION
+    # ==========================================
 
     col1, col2, col3 = st.columns(
         [1, 3, 1]
@@ -436,8 +1350,12 @@ with tab3:
         ):
 
             st.session_state.calendar_month = (
+
                 st.session_state.calendar_month
-                - pd.DateOffset(months=1)
+                - pd.DateOffset(
+                    months=1
+                )
+
             )
 
             st.rerun()
@@ -446,10 +1364,18 @@ with tab3:
     with col2:
 
         st.markdown(
-            f"<h2 style='text-align:center;'>"
-            f"{st.session_state.calendar_month.strftime('%B %Y')}"
-            f"</h2>",
+
+            f"""
+            <h2 style="
+                text-align:center;
+                margin-bottom:0;
+            ">
+                {st.session_state.calendar_month.strftime('%B %Y')}
+            </h2>
+            """,
+
             unsafe_allow_html=True
+
         )
 
 
@@ -461,23 +1387,25 @@ with tab3:
         ):
 
             st.session_state.calendar_month = (
+
                 st.session_state.calendar_month
-                + pd.DateOffset(months=1)
+                + pd.DateOffset(
+                    months=1
+                )
+
             )
 
             st.rerun()
 
 
-    # ==========================================
-    # TODAY BUTTON
-    # ==========================================
-
     if st.button(
         "📍 Jump to Today"
     ):
 
-        st.session_state.calendar_month = pd.Timestamp.today().replace(
-            day=1
+        st.session_state.calendar_month = (
+            pd.Timestamp.today().replace(
+                day=1
+            )
         )
 
         st.rerun()
@@ -487,10 +1415,58 @@ with tab3:
 
 
     # ==========================================
+    # ORGANIZATION FILTER
+    # ==========================================
+
+    organization_options = [
+        "All Organizations"
+    ] + sorted(
+        list(
+            set(
+                event["Organization"]
+                for event in events
+            )
+        )
+    )
+
+
+    selected_organization = st.selectbox(
+
+        "🏢 Filter by organization",
+
+        organization_options
+
+    )
+
+
+    if (
+        selected_organization
+        == "All Organizations"
+    ):
+
+        calendar_events = events
+
+    else:
+
+        calendar_events = [
+
+            event
+            for event in events
+
+            if event["Organization"]
+            == selected_organization
+
+        ]
+
+
+    # ==========================================
     # CALENDAR
     # ==========================================
 
-    calendar_month = st.session_state.calendar_month
+    calendar_month = (
+        st.session_state.calendar_month
+    )
+
 
     month_start = calendar_month
 
@@ -500,15 +1476,18 @@ with tab3:
     )
 
 
-    # Monday = 0
-    first_weekday = month_start.weekday()
+    first_weekday = (
+        month_start.weekday()
+    )
 
-    days_in_month = month_end.day
+
+    days_in_month = (
+        month_end.day
+    )
 
 
-    # Calendar weekday headers
+    weekdays = [
 
-    weekday_names = [
         "Mon",
         "Tue",
         "Wed",
@@ -516,35 +1495,45 @@ with tab3:
         "Fri",
         "Sat",
         "Sun"
+
     ]
 
 
     header_cols = st.columns(7)
 
-    for i, day_name in enumerate(
-        weekday_names
+
+    for i, weekday in enumerate(
+        weekdays
     ):
 
         with header_cols[i]:
 
             st.markdown(
-                f"<div style='text-align:center; "
-                f"font-weight:bold; "
-                f"padding:8px;'>"
-                f"{day_name}"
-                f"</div>",
+
+                f"""
+                <div style="
+                    text-align:center;
+                    font-weight:700;
+                    padding:8px;
+                ">
+                    {weekday}
+                </div>
+                """,
+
                 unsafe_allow_html=True
+
             )
 
 
     # ==========================================
-    # CALENDAR DAYS
+    # CALENDAR CELLS
     # ==========================================
 
     total_cells = (
         first_weekday
         + days_in_month
     )
+
 
     number_of_weeks = (
         (total_cells + 6) // 7
@@ -571,28 +1560,23 @@ with tab3:
 
             with cols[weekday]:
 
-                # Empty cells before month begins
-
                 if cell_number < first_weekday:
 
                     st.markdown(
-                        "<div style='"
-                        "height:115px;"
-                        "'></div>",
+                        "<div style='height:120px;'></div>",
                         unsafe_allow_html=True
                     )
 
                     continue
 
 
-                # Empty cells after month ends
-
-                if day_number > days_in_month:
+                if (
+                    day_number
+                    > days_in_month
+                ):
 
                     st.markdown(
-                        "<div style='"
-                        "height:115px;"
-                        "'></div>",
+                        "<div style='height:120px;'></div>",
                         unsafe_allow_html=True
                     )
 
@@ -600,41 +1584,35 @@ with tab3:
 
 
                 current_date = pd.Timestamp(
+
                     year=calendar_month.year,
+
                     month=calendar_month.month,
+
                     day=day_number
+
                 )
 
 
-                # ==================================
-                # EVENTS ON THIS DAY
-                # ==================================
+                day_events = [
 
-                day_events = []
-
-
-                for event in events:
+                    event
+                    for event in calendar_events
 
                     if (
+
                         event["Start Date"]
                         <= current_date
                         <= event["End Date"]
-                    ):
 
-                        day_events.append(
-                            event
-                        )
+                    )
 
+                ]
 
-                # ==================================
-                # DAY CONTAINER
-                # ==================================
 
                 with st.container(
                     border=True
                 ):
-
-                    # Highlight today
 
                     if (
                         current_date.date()
@@ -642,81 +1620,58 @@ with tab3:
                     ):
 
                         st.markdown(
-                            f"**📍 {day_number}**"
+                            f"### 📍 {day_number}"
                         )
 
                     else:
 
                         st.markdown(
-                            f"**{day_number}**"
+                            f"### {day_number}"
                         )
 
 
-                    # Show events
-
-                    for event in day_events:
+                    for event in day_events[:5]:
 
                         st.markdown(
-                            f"{event['Icon']} "
-                            f"**{event['Event']}**"
-                        )
 
+                            f"**📌 "
+                            f"{event['Event']}**"
+
+                        )
 
                         st.caption(
-                            event["Type"]
+
+                            f"{event['Organization']} "
+                            f"• "
+                            f"{event['Type']}"
+
                         )
 
 
-                    # Empty space keeps calendar consistent
+                        if event["Link"]:
 
-                    if not day_events:
+                            st.link_button(
 
-                        st.write("")
+                                "View",
+
+                                event["Link"],
+
+                                use_container_width=True
+
+                            )
+
+
+                    if len(day_events) > 5:
+
+                        st.caption(
+
+                            f"+ {len(day_events) - 5} "
+                            f"more events"
+
+                        )
 
 
                 day_number += 1
-
-
-    # ==========================================
-    # EVENT LEGEND
-    # ==========================================
-
-    st.divider()
-
-    st.markdown(
-        "### 🗂️ Event Categories"
-    )
-
-
-    legend_col1, legend_col2, legend_col3, legend_col4 = st.columns(4)
-
-
-    with legend_col1:
-
-        st.markdown(
-            "🔬 **Research / Scientific**"
-        )
-
-
-    with legend_col2:
-
-        st.markdown(
-            "🤝 **Advocacy & Community**"
-        )
-
-
-    with legend_col3:
-
-        st.markdown(
-            "💻 **Webinars**"
-        )
-
-
-    with legend_col4:
-
-        st.markdown(
-            "💙 **Patient & Family**"
-        )
 
 
     # ==========================================
@@ -726,7 +1681,7 @@ with tab3:
     st.divider()
 
     st.markdown(
-        "### 📌 Upcoming Events"
+        "## 📌 Upcoming Events"
     )
 
 
@@ -734,89 +1689,133 @@ with tab3:
 
 
     upcoming_events = sorted(
+
         [
+
             event
             for event in events
-            if event["End Date"] >= today
+
+            if event["End Date"]
+            >= today
+
         ],
-        key=lambda x: x["Start Date"]
+
+        key=lambda x:
+        x["Start Date"]
+
     )
 
 
-    for event in upcoming_events[:5]:
+    if upcoming_events:
 
-        with st.container(
-            border=True
-        ):
+        for event in upcoming_events[:20]:
 
-            col1, col2 = st.columns(
-                [4, 1]
-            )
+            with st.container(
+                border=True
+            ):
 
-
-            with col1:
-
-                st.markdown(
-                    f"### {event['Icon']} "
-                    f"{event['Event']}"
-                )
-
-                st.caption(
-                    f"{event['Organization']} • "
-                    f"{event['Type']}"
-                )
-
-                st.write(
-                    event["Focus"]
+                col1, col2 = st.columns(
+                    [4, 1]
                 )
 
 
-            with col2:
+                with col1:
 
-                if (
-                    event["Start Date"]
-                    == event["End Date"]
-                ):
+                    st.markdown(
 
-                    date_text = event[
-                        "Start Date"
-                    ].strftime(
-                        "%b %d, %Y"
+                        f"### 📌 "
+                        f"{event['Event']}"
+
                     )
 
-                else:
+                    st.caption(
 
-                    date_text = (
-                        event["Start Date"].strftime(
-                            "%b %d"
+                        f"{event['Organization']} "
+                        f"• "
+                        f"{event['Type']}"
+
+                    )
+
+
+                    if event["Location"]:
+
+                        st.write(
+                            f"📍 {event['Location']}"
                         )
-                        + " – "
-                        + event["End Date"].strftime(
+
+
+                with col2:
+
+                    st.write(
+
+                        event[
+                            "Start Date"
+                        ].strftime(
                             "%b %d, %Y"
                         )
+
                     )
 
 
-                st.markdown(
-                    f"📅 **{date_text}**"
-                )
+                    if event["Link"]:
+
+                        st.link_button(
+
+                            "View Event →",
+
+                            event["Link"],
+
+                            use_container_width=True
+
+                        )
 
 
-                st.link_button(
-                    "View Event →",
-                    event["Link"],
-                    use_container_width=True
-                )
+    else:
+
+        st.info(
+            "No upcoming events were found."
+        )
 
 
     # ==========================================
-    # FOOTER
+    # SOURCE LINKS
     # ==========================================
 
     st.divider()
 
-    st.info(
-        "Use the calendar to monitor upcoming T1D scientific meetings, "
-        "research activities, advocacy opportunities, webinars, and "
-        "patient-focused events."
+    st.markdown(
+        "### 🔗 Event Calendars"
+    )
+
+
+    source_cols = st.columns(3)
+
+
+    for i, (
+        organization,
+        source
+    ) in enumerate(
+        EVENT_SOURCES.items()
+    ):
+
+        with source_cols[
+            i % 3
+        ]:
+
+            st.link_button(
+
+                f"View {organization} Calendar →",
+
+                source["url"],
+
+                use_container_width=True
+
+            )
+
+
+    st.caption(
+        "Event data is retrieved from the organizations' "
+        "public event pages when the dashboard loads. "
+        "Because each organization uses a different calendar "
+        "system, individual sources may update at different times."
     )
