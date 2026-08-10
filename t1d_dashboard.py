@@ -142,8 +142,14 @@ with tab2:
             "Instagram": "https://www.instagram.com/t1dexchange/",
             "LinkedIn": "https://www.linkedin.com/company/t1d-exchange/",
             "X": "https://x.com/T1DExchange"
+        },
+        
+        "The Diabetes Link": {
+            "Website": "https://www.thediabeteslink.org/",
+            "Events": "https://www.thediabeteslink.org/events",
+            "Instagram": "https://www.instagram.com/thediabeteslink/",
+            "X": "https://x.com/thediabeteslink"
         }
-
     }
 
     # DISPLAY ORGANIZATIONS
@@ -184,52 +190,70 @@ for index, row in pag_data.iterrows():
 
             st.write("")
 
-            # ==========================================
-            # LINK BUTTONS
-            # ==========================================
+```python
+# ==========================================
+# LINK BUTTONS
+# ==========================================
 
-            col1, col2 = st.columns(2)
+col1, col2 = st.columns(2)
 
-            with col1:
+with col1:
 
-                if links["Website"]:
-                    st.link_button(
-                        "🌐 Website",
-                        links["Website"],
-                        use_container_width=True
-                    )
+    if links.get("Website"):
+        st.link_button(
+            "🌐 Website",
+            links["Website"],
+            use_container_width=True
+        )
 
-                if links["News"]:
-                    st.link_button(
-                        "📰 News",
-                        links["News"],
-                        use_container_width=True
-                    )
+    # The Diabetes Link uses Events instead of News
+    if organization == "The Diabetes Link":
 
-                if links["Instagram"]:
-                    st.link_button(
-                        "📸 Instagram",
-                        links["Instagram"],
-                        use_container_width=True
-                    )
+        if links.get("Events"):
+            st.link_button(
+                "📅 Events",
+                links["Events"],
+                use_container_width=True
+            )
 
-            with col2:
+    else:
 
-                if links["LinkedIn"]:
-                    st.link_button(
-                        "💼 LinkedIn",
-                        links["LinkedIn"],
-                        use_container_width=True
-                    )
+        if links.get("News"):
+            st.link_button(
+                "📰 News",
+                links["News"],
+                use_container_width=True
+            )
 
-                if links["X"]:
-                    st.link_button(
-                        "🐦 X",
-                        links["X"],
-                        use_container_width=True
-                    )
+    if links.get("Instagram"):
+        st.link_button(
+            "📸 Instagram",
+            links["Instagram"],
+            use_container_width=True
+        )
 
-            st.write("")
+
+with col2:
+
+    # Don't display LinkedIn for The Diabetes Link
+    if organization != "The Diabetes Link":
+
+        if links.get("LinkedIn"):
+            st.link_button(
+                "💼 LinkedIn",
+                links["LinkedIn"],
+                use_container_width=True
+            )
+
+    if links.get("X"):
+        st.link_button(
+            "🐦 X",
+            links["X"],
+            use_container_width=True
+        )
+
+st.write("")
+
 
 
 # ==========================================
