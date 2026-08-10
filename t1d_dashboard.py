@@ -147,14 +147,14 @@ with tab2:
     # DISPLAY ORGANIZATIONS
     # ==========================================
 
-pag_data = pd.read_csv("PAG_database.csv")
+    pag_data = pd.read_csv("PAG_database.csv")
 
-# Remove Diabetes Leadership Council from the PAG Directory
-pag_data = pag_data[
-    pag_data["Organization"] != "Diabetes Leadership Council"
-]
+    # Remove Diabetes Leadership Council from the PAG Directory
+    pag_data = pag_data[
+        pag_data["Organization"] != "Diabetes Leadership Council"
+    ]
 
-for index, row in pag_data.iterrows():
+    for index, row in pag_data.iterrows():
 
         organization = row["Organization"]
 
