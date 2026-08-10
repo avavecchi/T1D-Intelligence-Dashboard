@@ -353,7 +353,7 @@ with tab3:
             "https://www.thediabeteslink.org/events",
 
         "Beyond Type 1":
-            "https://beyondtype1.org/es/eventos/"
+            "https://beyondtype1.org/events/"
     }
 
     source_cols = st.columns(3)
