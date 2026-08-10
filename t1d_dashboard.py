@@ -287,9 +287,10 @@ with tab3:
     st.header("📅 T1D Events & Opportunities")
 
     st.caption(
-        "Upcoming conferences, webinars, research meetings, and advocacy events "
-        "relevant to the Type 1 Diabetes community."
+        "Track upcoming conferences, webinars, research meetings, "
+        "and advocacy opportunities across the Type 1 Diabetes community."
     )
+
 
     # ==========================================
     # EVENT DATA
@@ -301,7 +302,8 @@ with tab3:
             "Event": "ADA Scientific Sessions",
             "Type": "Scientific Conference",
             "Icon": "🔬",
-            "Timing": "Annual",
+            "Start Date": "2027-06-05",
+            "End Date": "2027-06-08",
             "Focus": "Diabetes research, clinical care, technology, and innovation",
             "Organization": "American Diabetes Association",
             "Link": "https://professional.diabetes.org/scientific-sessions"
@@ -311,7 +313,8 @@ with tab3:
             "Event": "ADA Professional Webinars",
             "Type": "Webinar",
             "Icon": "💻",
-            "Timing": "Ongoing",
+            "Start Date": "2026-08-20",
+            "End Date": "2026-08-20",
             "Focus": "Clinical updates, diabetes management, guidelines, and education",
             "Organization": "American Diabetes Association",
             "Link": "https://professional.diabetes.org/professional-development/upcoming-professional-webinars"
@@ -321,7 +324,8 @@ with tab3:
             "Event": "Breakthrough T1D Events",
             "Type": "Advocacy & Community",
             "Icon": "🤝",
-            "Timing": "Ongoing",
+            "Start Date": "2026-09-01",
+            "End Date": "2026-09-01",
             "Focus": "T1D research, advocacy, fundraising, and community engagement",
             "Organization": "Breakthrough T1D",
             "Link": "https://www.breakthrought1d.org/events/"
@@ -331,7 +335,8 @@ with tab3:
             "Event": "TrialNet Events",
             "Type": "Research",
             "Icon": "🧬",
-            "Timing": "Ongoing",
+            "Start Date": "2026-09-15",
+            "End Date": "2026-09-15",
             "Focus": "T1D screening, prevention, clinical trials, and disease progression",
             "Organization": "TrialNet",
             "Link": "https://trialnet.org/news-events/events"
@@ -341,7 +346,8 @@ with tab3:
             "Event": "ISPAD Congress",
             "Type": "Scientific Conference",
             "Icon": "🌎",
-            "Timing": "Annual",
+            "Start Date": "2026-10-01",
+            "End Date": "2026-10-04",
             "Focus": "Pediatric diabetes research, treatment, technology, and care",
             "Organization": "ISPAD",
             "Link": "https://www.ispad.org/"
@@ -351,7 +357,8 @@ with tab3:
             "Event": "Children with Diabetes Friends for Life",
             "Type": "Patient & Family Conference",
             "Icon": "💙",
-            "Timing": "Annual",
+            "Start Date": "2026-07-14",
+            "End Date": "2026-07-18",
             "Focus": "Education, peer support, technology, and family engagement",
             "Organization": "Children with Diabetes",
             "Link": "https://childrenwithdiabetes.com/events/"
@@ -361,132 +368,409 @@ with tab3:
 
 
     # ==========================================
-    # QUICK STATS
+    # CONVERT DATES
     # ==========================================
 
-    col1, col2, col3 = st.columns(3)
+    for event in events:
+
+        event["Start Date"] = pd.to_datetime(
+            event["Start Date"]
+        )
+
+        event["End Date"] = pd.to_datetime(
+            event["End Date"]
+        )
+
+
+    # ==========================================
+    # MONTH NAVIGATION
+    # ==========================================
+
+    if "calendar_month" not in st.session_state:
+
+        st.session_state.calendar_month = pd.Timestamp.today().replace(
+            day=1
+        )
+
+
+    col1, col2, col3 = st.columns(
+        [1, 3, 1]
+    )
+
 
     with col1:
 
-        st.metric(
-            "📅 Events Tracked",
-            len(events)
-        )
+        if st.button(
+            "← Previous",
+            use_container_width=True
+        ):
+
+            st.session_state.calendar_month = (
+                st.session_state.calendar_month
+                - pd.DateOffset(months=1)
+            )
+
+            st.rerun()
+
 
     with col2:
 
-        st.metric(
-            "🔬 Research",
-            len([
-                e for e in events
-                if e["Type"] in [
-                    "Research",
-                    "Scientific Conference"
-                ]
-            ])
+        st.markdown(
+            f"<h2 style='text-align:center;'>"
+            f"{st.session_state.calendar_month.strftime('%B %Y')}"
+            f"</h2>",
+            unsafe_allow_html=True
         )
+
 
     with col3:
 
-        st.metric(
-            "🤝 Advocacy & Community",
-            len([
-                e for e in events
-                if "Advocacy" in e["Type"]
-                or "Patient" in e["Type"]
-            ])
+        if st.button(
+            "Next →",
+            use_container_width=True
+        ):
+
+            st.session_state.calendar_month = (
+                st.session_state.calendar_month
+                + pd.DateOffset(months=1)
+            )
+
+            st.rerun()
+
+
+    # ==========================================
+    # TODAY BUTTON
+    # ==========================================
+
+    if st.button(
+        "📍 Jump to Today"
+    ):
+
+        st.session_state.calendar_month = pd.Timestamp.today().replace(
+            day=1
         )
+
+        st.rerun()
 
 
     st.divider()
 
 
     # ==========================================
-    # EVENT FILTER
+    # CALENDAR
     # ==========================================
 
-    st.markdown("### 🔎 Explore Events")
+    calendar_month = st.session_state.calendar_month
 
-    event_types = [
-        "All Events"
-    ] + sorted(
-        list(set(
-            event["Type"]
+    month_start = calendar_month
+
+    month_end = (
+        calendar_month
+        + pd.offsets.MonthEnd(1)
+    )
+
+
+    # Monday = 0
+    first_weekday = month_start.weekday()
+
+    days_in_month = month_end.day
+
+
+    # Calendar weekday headers
+
+    weekday_names = [
+        "Mon",
+        "Tue",
+        "Wed",
+        "Thu",
+        "Fri",
+        "Sat",
+        "Sun"
+    ]
+
+
+    header_cols = st.columns(7)
+
+    for i, day_name in enumerate(
+        weekday_names
+    ):
+
+        with header_cols[i]:
+
+            st.markdown(
+                f"<div style='text-align:center; "
+                f"font-weight:bold; "
+                f"padding:8px;'>"
+                f"{day_name}"
+                f"</div>",
+                unsafe_allow_html=True
+            )
+
+
+    # ==========================================
+    # CALENDAR DAYS
+    # ==========================================
+
+    total_cells = (
+        first_weekday
+        + days_in_month
+    )
+
+    number_of_weeks = (
+        (total_cells + 6) // 7
+    )
+
+
+    day_number = 1
+
+
+    for week in range(
+        number_of_weeks
+    ):
+
+        cols = st.columns(7)
+
+
+        for weekday in range(7):
+
+            cell_number = (
+                week * 7
+                + weekday
+            )
+
+
+            with cols[weekday]:
+
+                # Empty cells before month begins
+
+                if cell_number < first_weekday:
+
+                    st.markdown(
+                        "<div style='"
+                        "height:115px;"
+                        "'></div>",
+                        unsafe_allow_html=True
+                    )
+
+                    continue
+
+
+                # Empty cells after month ends
+
+                if day_number > days_in_month:
+
+                    st.markdown(
+                        "<div style='"
+                        "height:115px;"
+                        "'></div>",
+                        unsafe_allow_html=True
+                    )
+
+                    continue
+
+
+                current_date = pd.Timestamp(
+                    year=calendar_month.year,
+                    month=calendar_month.month,
+                    day=day_number
+                )
+
+
+                # ==================================
+                # EVENTS ON THIS DAY
+                # ==================================
+
+                day_events = []
+
+
+                for event in events:
+
+                    if (
+                        event["Start Date"]
+                        <= current_date
+                        <= event["End Date"]
+                    ):
+
+                        day_events.append(
+                            event
+                        )
+
+
+                # ==================================
+                # DAY CONTAINER
+                # ==================================
+
+                with st.container(
+                    border=True
+                ):
+
+                    # Highlight today
+
+                    if (
+                        current_date.date()
+                        == pd.Timestamp.today().date()
+                    ):
+
+                        st.markdown(
+                            f"**📍 {day_number}**"
+                        )
+
+                    else:
+
+                        st.markdown(
+                            f"**{day_number}**"
+                        )
+
+
+                    # Show events
+
+                    for event in day_events:
+
+                        st.markdown(
+                            f"{event['Icon']} "
+                            f"**{event['Event']}**"
+                        )
+
+
+                        st.caption(
+                            event["Type"]
+                        )
+
+
+                    # Empty space keeps calendar consistent
+
+                    if not day_events:
+
+                        st.write("")
+
+
+                day_number += 1
+
+
+    # ==========================================
+    # EVENT LEGEND
+    # ==========================================
+
+    st.divider()
+
+    st.markdown(
+        "### 🗂️ Event Categories"
+    )
+
+
+    legend_col1, legend_col2, legend_col3, legend_col4 = st.columns(4)
+
+
+    with legend_col1:
+
+        st.markdown(
+            "🔬 **Research / Scientific**"
+        )
+
+
+    with legend_col2:
+
+        st.markdown(
+            "🤝 **Advocacy & Community**"
+        )
+
+
+    with legend_col3:
+
+        st.markdown(
+            "💻 **Webinars**"
+        )
+
+
+    with legend_col4:
+
+        st.markdown(
+            "💙 **Patient & Family**"
+        )
+
+
+    # ==========================================
+    # UPCOMING EVENTS
+    # ==========================================
+
+    st.divider()
+
+    st.markdown(
+        "### 📌 Upcoming Events"
+    )
+
+
+    today = pd.Timestamp.today()
+
+
+    upcoming_events = sorted(
+        [
+            event
             for event in events
-        ))
-    )
-
-    selected_type = st.selectbox(
-        "Filter by event type",
-        event_types
+            if event["End Date"] >= today
+        ],
+        key=lambda x: x["Start Date"]
     )
 
 
-    if selected_type == "All Events":
+    for event in upcoming_events[:5]:
 
-        filtered_events = events
+        with st.container(
+            border=True
+        ):
 
-    else:
-
-        filtered_events = [
-            event for event in events
-            if event["Type"] == selected_type
-        ]
-
-
-    st.write("")
-
-
-    # ==========================================
-    # EVENT CARDS
-    # ==========================================
-
-    for event in filtered_events:
-
-        with st.container(border=True):
-
-            # Header row
-            col1, col2 = st.columns(
-                [5, 1]
-            )
-
-            with col1:
-
-                st.markdown(
-                    f"### {event['Icon']} {event['Event']}"
-                )
-
-                st.caption(
-                    f"{event['Organization']}  •  {event['Type']}"
-                )
-
-            with col2:
-
-                st.markdown(
-                    f"**{event['Timing']}**"
-                )
-
-
-            st.write("")
-
-            # Event description
-            st.write(
-                event["Focus"]
-            )
-
-
-            # Bottom information
             col1, col2 = st.columns(
                 [4, 1]
             )
 
+
             with col1:
 
                 st.markdown(
-                    f"**Focus:** {event['Focus']}"
+                    f"### {event['Icon']} "
+                    f"{event['Event']}"
                 )
 
+                st.caption(
+                    f"{event['Organization']} • "
+                    f"{event['Type']}"
+                )
+
+                st.write(
+                    event["Focus"]
+                )
+
+
             with col2:
+
+                if (
+                    event["Start Date"]
+                    == event["End Date"]
+                ):
+
+                    date_text = event[
+                        "Start Date"
+                    ].strftime(
+                        "%b %d, %Y"
+                    )
+
+                else:
+
+                    date_text = (
+                        event["Start Date"].strftime(
+                            "%b %d"
+                        )
+                        + " – "
+                        + event["End Date"].strftime(
+                            "%b %d, %Y"
+                        )
+                    )
+
+
+                st.markdown(
+                    f"📅 **{date_text}**"
+                )
+
 
                 st.link_button(
                     "View Event →",
@@ -501,12 +785,8 @@ with tab3:
 
     st.divider()
 
-    st.markdown(
-        "### 💡 Why These Events Matter"
-    )
-
     st.info(
-        "These events provide opportunities to monitor emerging T1D research, "
-        "clinical practice changes, patient advocacy priorities, diabetes "
-        "technology developments, and broader trends across the T1D community."
+        "Use the calendar to monitor upcoming T1D scientific meetings, "
+        "research activities, advocacy opportunities, webinars, and "
+        "patient-focused events."
     )
