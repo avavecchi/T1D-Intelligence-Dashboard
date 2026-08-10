@@ -12,7 +12,7 @@ st.title("🩺 Type 1 Diabetes Intelligence Dashboard")
 st.caption("Patient advocacy, research, policy, and social media hub")
 
 
-tab1, tab2, tab3, tab4 = st.tabs([
+tab1, tab2, tab3 = st.tabs([
     "📰 News",
     "🤝 PAG Directory",
     "📅 Events",
