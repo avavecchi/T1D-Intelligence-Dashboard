@@ -147,30 +147,41 @@ with tab2:
                 )
 
 
+# ==========================================
 # EVENTS TAB
+# ==========================================
+
 with tab3:
 
-    st.header("📅 T1D Events")
+    st.header("📅 T1D Events & Opportunities")
 
     st.caption(
-        "Upcoming diabetes conferences, webinars, and advocacy events"
+        "Upcoming conferences, webinars, research meetings, and advocacy events "
+        "relevant to the Type 1 Diabetes community."
     )
 
+    # ==========================================
+    # EVENT DATA
+    # ==========================================
 
     events = [
 
         {
             "Event": "ADA Scientific Sessions",
             "Type": "Scientific Conference",
-            "Focus": "Diabetes research, clinical care, innovation",
+            "Icon": "🔬",
+            "Timing": "Annual",
+            "Focus": "Diabetes research, clinical care, technology, and innovation",
             "Organization": "American Diabetes Association",
             "Link": "https://professional.diabetes.org/scientific-sessions"
         },
 
         {
             "Event": "ADA Professional Webinars",
-            "Type": "Webinar Series",
-            "Focus": "Clinical updates, guidelines, diabetes management",
+            "Type": "Webinar",
+            "Icon": "💻",
+            "Timing": "Ongoing",
+            "Focus": "Clinical updates, diabetes management, guidelines, and education",
             "Organization": "American Diabetes Association",
             "Link": "https://professional.diabetes.org/professional-development/upcoming-professional-webinars"
         },
@@ -178,42 +189,196 @@ with tab3:
         {
             "Event": "Breakthrough T1D Events",
             "Type": "Advocacy & Community",
-            "Focus": "T1D research, advocacy, community engagement",
+            "Icon": "🤝",
+            "Timing": "Ongoing",
+            "Focus": "T1D research, advocacy, fundraising, and community engagement",
             "Organization": "Breakthrough T1D",
             "Link": "https://www.breakthrought1d.org/events/"
         },
 
         {
-            "Event": "Clinical Research Updates",
+            "Event": "TrialNet Events",
             "Type": "Research",
-            "Focus": "Early-stage T1D, screening, disease modification",
+            "Icon": "🧬",
+            "Timing": "Ongoing",
+            "Focus": "T1D screening, prevention, clinical trials, and disease progression",
             "Organization": "TrialNet",
             "Link": "https://www.trialnet.org/events"
+        },
+
+        {
+            "Event": "ISPAD Congress",
+            "Type": "Scientific Conference",
+            "Icon": "🌎",
+            "Timing": "Annual",
+            "Focus": "Pediatric diabetes research, treatment, technology, and care",
+            "Organization": "ISPAD",
+            "Link": "https://www.ispad.org/"
+        },
+
+        {
+            "Event": "Children with Diabetes Friends for Life",
+            "Type": "Patient & Family Conference",
+            "Icon": "💙",
+            "Timing": "Annual",
+            "Focus": "Education, peer support, technology, and family engagement",
+            "Organization": "Children with Diabetes",
+            "Link": "https://childrenwithdiabetes.com/events/"
         }
 
     ]
 
 
-    for event in events:
+    # ==========================================
+    # QUICK STATS
+    # ==========================================
 
-        st.subheader(event["Event"])
+    col1, col2, col3 = st.columns(3)
 
-        st.write(
-            f"""
-            **Type:** {event["Type"]}
+    with col1:
 
-            **Organization:** {event["Organization"]}
-
-            **Focus:** {event["Focus"]}
-            """
+        st.metric(
+            "📅 Events Tracked",
+            len(events)
         )
 
-        st.link_button(
-            "View Event",
-            event["Link"]
+    with col2:
+
+        st.metric(
+            "🔬 Research",
+            len([
+                e for e in events
+                if e["Type"] in [
+                    "Research",
+                    "Scientific Conference"
+                ]
+            ])
         )
 
-        st.divider()
+    with col3:
+
+        st.metric(
+            "🤝 Advocacy & Community",
+            len([
+                e for e in events
+                if "Advocacy" in e["Type"]
+                or "Patient" in e["Type"]
+            ])
+        )
+
+
+    st.divider()
+
+
+    # ==========================================
+    # EVENT FILTER
+    # ==========================================
+
+    st.markdown("### 🔎 Explore Events")
+
+    event_types = [
+        "All Events"
+    ] + sorted(
+        list(set(
+            event["Type"]
+            for event in events
+        ))
+    )
+
+    selected_type = st.selectbox(
+        "Filter by event type",
+        event_types
+    )
+
+
+    if selected_type == "All Events":
+
+        filtered_events = events
+
+    else:
+
+        filtered_events = [
+            event for event in events
+            if event["Type"] == selected_type
+        ]
+
+
+    st.write("")
+
+
+    # ==========================================
+    # EVENT CARDS
+    # ==========================================
+
+    for event in filtered_events:
+
+        with st.container(border=True):
+
+            # Header row
+            col1, col2 = st.columns(
+                [5, 1]
+            )
+
+            with col1:
+
+                st.markdown(
+                    f"### {event['Icon']} {event['Event']}"
+                )
+
+                st.caption(
+                    f"{event['Organization']}  •  {event['Type']}"
+                )
+
+            with col2:
+
+                st.markdown(
+                    f"**{event['Timing']}**"
+                )
+
+
+            st.write("")
+
+            # Event description
+            st.write(
+                event["Focus"]
+            )
+
+
+            # Bottom information
+            col1, col2 = st.columns(
+                [4, 1]
+            )
+
+            with col1:
+
+                st.markdown(
+                    f"**Focus:** {event['Focus']}"
+                )
+
+            with col2:
+
+                st.link_button(
+                    "View Event →",
+                    event["Link"],
+                    use_container_width=True
+                )
+
+
+    # ==========================================
+    # FOOTER
+    # ==========================================
+
+    st.divider()
+
+    st.markdown(
+        "### 💡 Why These Events Matter"
+    )
+
+    st.info(
+        "These events provide opportunities to monitor emerging T1D research, "
+        "clinical practice changes, patient advocacy priorities, diabetes "
+        "technology developments, and broader trends across the T1D community."
+    )
 
 # DAILY BRIEF TAB
 
